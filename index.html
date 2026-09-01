@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>rec rec studio</title>
+<style>
+  :root{
+    --tolex:#e9dfc6;        /* crema tolex */
+    --tolex-dark:#d8cba9;
+    --panel:#1c1712;        /* pannello controlli nero */
+    --grill:#2b2117;        /* tela griglia */
+    --gold:#c9a45c;         /* hardware oro */
+    --gold-hi:#e8cd8f;
+    --brown:#4a3524;        /* pelle marrone */
+    --red:#c0392b;
+    --red-hi:#ff6a55;
+    --green:#7fb069;
+    --cream-text:#f2ead2;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; padding:16px 8px 40px;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,.06), transparent 60%),
+      repeating-linear-gradient(45deg, #241b12 0 2px, #2c2216 2px 4px),
+      #241b12;
+    font-family:"Helvetica Neue", Arial, sans-serif;
+    color:var(--panel);
+    display:flex; justify-content:center;
+  }
+  .amp{
+    width:100%; max-width:760px;
+    background:
+      repeating-radial-gradient(circle at 0 0, transparent 0 6px, rgba(0,0,0,.04) 6px 7px),
+      var(--tolex);
+    border:6px solid var(--brown);
+    border-radius:18px;
+    box-shadow: 0 18px 50px rgba(0,0,0,.6), inset 0 0 0 2px rgba(255,255,255,.35);
+    overflow:hidden;
+  }
+  /* maniglia */
+  .handle{
+    width:180px; height:16px; margin:10px auto 0;
+    background:linear-gradient(#5a4128,#3a2a1a);
+    border-radius:10px 10px 4px 4px;
+    box-shadow:0 3px 4px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
+  }
+  /* griglia con logo */
+  .grillcloth{
+    margin:12px 14px 0;
+    padding:26px 16px;
+    border-radius:10px;
+    background:
+      repeating-linear-gradient(45deg, rgba(201,164,92,.16) 0 1px, transparent 1px 5px),
+      repeating-linear-gradient(-45deg, rgba(201,164,92,.16) 0 1px, transparent 1px 5px),
+      var(--grill);
+    border:3px solid var(--gold);
+    box-shadow:inset 0 0 30px rgba(0,0,0,.7);
+    text-align:center;
+  }
+  .logo{
+    display:inline-block;
+    font-family:Georgia, "Times New Roman", serif;
+    font-style:italic; font-weight:bold;
+    font-size:clamp(30px, 7vw, 46px);
+    color:var(--gold-hi);
+    text-shadow:0 2px 0 #6b521f, 0 4px 8px rgba(0,0,0,.8);
+    letter-spacing:1px;
+    transform:rotate(-2deg);
+  }
+  .logo small{
+    display:block; font-size:.32em; letter-spacing:.55em;
+    font-style:normal; font-family:Arial, sans-serif; font-weight:400;
+    color:var(--gold); margin-top:4px; text-transform:uppercase;
+  }
+  /* pannello controlli */
+  .cpanel{
+    margin:12px 14px; padding:14px 12px;
+    background:linear-gradient(#26201a,#15100c);
+    border-radius:8px;
+    border:2px solid var(--gold);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.15), inset 0 -6px 14px rgba(0,0,0,.6);
+    color:var(--cream-text);
+  }
+  .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center;}
+  .row + .row{margin-top:12px;}
+  label.plate{
+    font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--gold); display:block; text-align:center; margin-bottom:4px;
+  }
+  select,input[type=number]{
+    background:#0e0b08; color:var(--cream-text);
+    border:1px solid var(--gold); border-radius:5px;
+    padding:7px 8px; font-size:14px; max-width:210px;
+  }
+  input[type=number]{width:74px; text-align:center;}
+  /* pulsanti stile amp */
+  button{
+    cursor:pointer; border:none; font-family:inherit;
+  }
+  .btn{
+    background:linear-gradient(#f6eed6,#d8cba9);
+    color:var(--panel); font-weight:700; font-size:12px;
+    letter-spacing:.12em; text-transform:uppercase;
+    border-radius:6px; padding:9px 14px;
+    border:1px solid #9a8354;
+    box-shadow:0 3px 0 #8a7448, 0 5px 8px rgba(0,0,0,.5);
+  }
+  .btn:active{transform:translateY(2px); box-shadow:0 1px 0 #8a7448;}
+  .btn[disabled]{opacity:.4; cursor:default;}
+  /* jewel transport */
+  .jewel{
+    width:58px; height:58px; border-radius:50%;
+    border:3px solid var(--gold);
+    box-shadow:0 4px 0 #6b521f, 0 8px 14px rgba(0,0,0,.6), inset 0 -8px 12px rgba(0,0,0,.45), inset 0 6px 10px rgba(255,255,255,.35);
+    font-size:11px; font-weight:800; letter-spacing:.08em; color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.7);
+  }
+  .jewel:active{transform:translateY(2px);}
+  #btnRec{background:radial-gradient(circle at 35% 30%, #e2695c, var(--red) 65%, #7a1f14);}
+  #btnRec.on{background:radial-gradient(circle at 35% 30%, #ffb3a6, var(--red-hi) 60%, #b1210f); animation:pulse 1s infinite;}
+  #btnPlay{background:radial-gradient(circle at 35% 30%, #b6d8a6, var(--green) 65%, #3c5c30);}
+  #btnPlay.on{box-shadow:0 0 18px var(--green), 0 4px 0 #6b521f;}
+  #btnStop{background:radial-gradient(circle at 35% 30%, #fff6dd, var(--tolex-dark) 65%, #8a7448); color:var(--panel); text-shadow:none;}
+  @keyframes pulse{50%{box-shadow:0 0 22px var(--red-hi), 0 4px 0 #6b521f;}}
+  .clock{
+    font-family:"Courier New", monospace; font-size:22px; letter-spacing:2px;
+    background:#0a0806; border:1px solid var(--gold); border-radius:5px;
+    padding:6px 12px; color:#ffce7a; min-width:110px; text-align:center;
+    text-shadow:0 0 8px rgba(255,180,80,.6);
+  }
+  .pill{
+    background:transparent; color:var(--gold);
+    border:1px solid var(--gold); border-radius:20px;
+    font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    padding:6px 12px;
+  }
+  .pill.on{background:var(--gold); color:var(--panel); box-shadow:0 0 12px rgba(201,164,92,.7);}
+  .pill.learn-armed{border-color:var(--red-hi); color:var(--red-hi);}
+  /* tracce = channel strip */
+  .tracks{margin:0 14px 14px; display:flex; flex-direction:column; gap:8px;}
+  .strip{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    background:linear-gradient(#f4ecd6,#e0d4b2);
+    border:1px solid #9a8354; border-radius:8px;
+    padding:8px 10px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 3px 6px rgba(0,0,0,.35);
+  }
+  .strip .chname{
+    font-family:Georgia, serif; font-style:italic; font-weight:bold;
+    color:var(--brown); width:52px; font-size:15px;
+  }
+  .sq{
+    width:34px; height:30px; border-radius:5px; font-size:10px; font-weight:800;
+    border:1px solid #9a8354; background:linear-gradient(#fff,#d8cba9); color:var(--panel);
+    box-shadow:0 2px 0 #8a7448;
+  }
+  .sq:active{transform:translateY(1px);}
+  .sq.arm.on{background:radial-gradient(circle at 40% 30%, #ff8f80, var(--red)); color:#fff; box-shadow:0 0 10px var(--red-hi);}
+  .sq.mute.on{background:#3a3a3a; color:#ffce7a;}
+  .sq.solo.on{background:var(--gold); color:var(--panel); box-shadow:0 0 10px var(--gold);}
+  .sq.warp.on{background:#7fb069; color:#fff;}
+  .sq.midi-target{outline:2px dashed var(--red-hi); outline-offset:2px;}
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    flex:1; min-width:90px; height:8px; border-radius:4px;
+    background:linear-gradient(#0e0b08,#26201a);
+    border:1px solid var(--gold); outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:22px; height:22px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-hi), var(--gold) 60%, #6b521f);
+    border:1px solid #6b521f; cursor:pointer;
+    box-shadow:0 2px 4px rgba(0,0,0,.5);
+  }
+  input[type=range].midi-target{outline:2px dashed var(--red-hi); outline-offset:2px;}
+  .strip .meta{font-size:9px; color:#6a5638; width:100%; letter-spacing:.05em;}
+  .hint{
+    margin:0 20px 16px; text-align:center;
+    font-size:11px; color:var(--tolex-dark); letter-spacing:.04em;
+  }
+  .cpanel .hint{margin:8px 0 0; color:#8f7c58;}
+  .divider{height:2px; background:var(--gold); opacity:.35; margin:12px 0; border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="amp">
+  <div class="handle"></div>
+
+  <div class="grillcloth">
+    <span class="logo">rec rec<small>studio</small></span>
+  </div>
+
+  <div class="cpanel">
+    <!-- SETUP -->
+    <div class="row" id="setupRow">
+      <div>
+        <label class="plate">Scheda audio</label>
+        <select id="deviceSel"><option>— premi Rileva —</option></select>
+      </div>
+      <div>
+        <label class="plate">Canali</label>
+        <select id="chSel" disabled><option>—</option></select>
+      </div>
+      <div>
+        <label class="plate">&nbsp;</label>
+        <button class="btn" id="btnDetect">Rileva</button>
+      </div>
+      <div>
+        <label class="plate">&nbsp;</label>
+        <button class="btn" id="btnOpen" disabled>Apri canali</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- TRANSPORT -->
+    <div class="row">
+      <button class="jewel" id="btnRec" data-midi="rec">REC</button>
+      <button class="jewel" id="btnPlay" data-midi="play">PLAY</button>
+      <button class="jewel" id="btnStop" data-midi="stop">STOP</button>
+      <div class="clock" id="clock">00:00.0</div>
+      <div>
+        <label class="plate">BPM</label>
+        <input type="number" id="bpm" value="120" min="30" max="300">
+      </div>
+      <button class="pill" id="btnClick">Click</button>
+    </div>
+
+    <div class="row">
+      <button class="pill" id="btnMidi">MIDI</button>
+      <button class="pill" id="btnLearn" disabled>MIDI Learn</button>
+      <button class="pill" id="btnVoice">Voce</button>
+      <button class="pill" id="btnMaster" disabled>Export Master</button>
+    </div>
+    <div class="hint" id="status">Premi "Rileva" per trovare la scheda audio e dare il permesso al microfono.</div>
+  </div>
+
+  <div class="tracks" id="tracks"></div>
+
+  <div class="hint">
+    REC registra le tracce armate (⏺) e riproduce le altre in overdub · W = warp al BPM di progetto ·
+    MIDI Learn: attivalo, tocca un controllo, muovi un tasto/manopola MIDI ·
+    Voce: "rec / registra", "play / vai", "stop / ferma"
+  </div>
+</div>
+
+<script>
+/* ================= stato ================= */
+let ctx=null, stream=null, srcNode=null, splitter=null, proc=null, sinkGain=null;
+let tracks=[];            // {armed,mute,solo,vol,warp,buffer,recBPM,chunks,gain,player,els}
+let recording=false, playing=false, startTime=0, rafId=null;
+let midiAccess=null, midiMap={}, learnMode=false, learnTarget=null;
+let recog=null, voiceOn=false, clickOn=false, clickTimer=null;
+const $=id=>document.getElementById(id);
+const statusEl=$("status");
+const setStatus=t=>statusEl.textContent=t;
+const projBPM=()=>Math.max(30,Math.min(300,parseFloat($("bpm").value)||120));
+
+/* ================= setup audio ================= */
+$("btnDetect").onclick=async()=>{
+  try{
+    // permesso necessario per leggere i nomi dei device
+    const tmp=await navigator.mediaDevices.getUserMedia({audio:true});
+    tmp.getTracks().forEach(t=>t.stop());
+    const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audioinput");
+    const sel=$("deviceSel"); sel.innerHTML="";
+    devs.forEach((d,i)=>{
+      const o=document.createElement("option");
+      o.value=d.deviceId; o.textContent=d.label||("Ingresso "+(i+1));
+      sel.appendChild(o);
+    });
+    $("btnOpen").disabled=false;
+    setStatus(devs.length+" ingressi trovati. Scegli la scheda e premi Apri canali.");
+    sel.onchange=()=>{ $("chSel").innerHTML="<option>—</option>"; $("chSel").disabled=true; };
+  }catch(e){ setStatus("Permesso negato o nessun ingresso audio: "+e.message); }
+};
+
+$("btnOpen").onclick=async()=>{
+  try{
+    stopAll();
+    if(stream) stream.getTracks().forEach(t=>t.stop());
+    if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)();
+    await ctx.resume();
+    const devId=$("deviceSel").value;
+    stream=await navigator.mediaDevices.getUserMedia({audio:{
+      deviceId:devId?{exact:devId}:undefined,
+      channelCount:{ideal:32},
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false
+    }});
+    const st=stream.getAudioTracks()[0].getSettings();
+    const maxCh=st.channelCount||1;
+    // popola tendina canali
+    const chSel=$("chSel"); chSel.innerHTML="";
+    for(let i=1;i<=maxCh;i++){
+      const o=document.createElement("option");
+      o.value=i; o.textContent=i+(i===1?" canale":" canali");
+      chSel.appendChild(o);
+    }
+    chSel.value=maxCh; chSel.disabled=false;
+    buildGraph(maxCh);
+    chSel.onchange=()=>buildTracks(parseInt(chSel.value));
+    buildTracks(maxCh);
+    setStatus("Scheda aperta: "+maxCh+" canali disponibili a "+ctx.sampleRate+" Hz. CH1→Traccia 1, CH2→Traccia 2…");
+    $("btnMaster").disabled=false;
+  }catch(e){ setStatus("Errore apertura scheda: "+e.message); }
+};
+
+function buildGraph(nCh){
+  if(proc){proc.disconnect(); proc.onaudioprocess=null;}
+  if(srcNode) srcNode.disconnect();
+  srcNode=ctx.createMediaStreamSource(stream);
+  proc=ctx.createScriptProcessor(4096, Math.min(nCh, srcNode.channelCount||nCh), 1);
+  sinkGain=ctx.createGain(); sinkGain.gain.value=0;
+  srcNode.connect(proc); proc.connect(sinkGain); sinkGain.connect(ctx.destination);
+  proc.onaudioprocess=e=>{
+    if(!recording) return;
+    const inp=e.inputBuffer;
+    tracks.forEach((tr,i)=>{
+      if(tr.armed && i<inp.numberOfChannels){
+        tr.chunks.push(new Float32Array(inp.getChannelData(i)));
+      }
+    });
+  };
+}
+
+/* ================= tracce / UI ================= */
+function buildTracks(n){
+  stopAll();
+  const cont=$("tracks"); cont.innerHTML="";
+  tracks=[];
+  for(let i=0;i<n;i++){
+    const g=ctx.createGain(); g.gain.value=0.8; g.connect(ctx.destination);
+    const tr={armed:false,mute:false,solo:false,vol:0.8,warp:false,buffer:null,recBPM:null,chunks:[],gain:g,player:null,els:{}};
+    const strip=document.createElement("div"); strip.className="strip";
+    strip.innerHTML=
+      '<span class="chname">CH '+(i+1)+'</span>'+
+      '<button class="sq arm" data-midi="arm-'+i+'" title="Arma per registrare">⏺</button>'+
+      '<button class="sq mute" data-midi="mute-'+i+'">M</button>'+
+      '<button class="sq solo" data-midi="solo-'+i+'">S</button>'+
+      '<button class="sq warp" data-midi="warp-'+i+'" title="Warp al BPM di progetto">W</button>'+
+      '<input type="range" min="0" max="1" step="0.01" value="0.8" data-midi="vol-'+i+'">'+
+      '<button class="sq" data-exp="'+i+'" title="Esporta traccia">EXP</button>'+
+      '<span class="meta">vuota</span>';
+    cont.appendChild(strip);
+    const [arm,mute,solo,warp]=strip.querySelectorAll(".sq");
+    const vol=strip.querySelector("input[type=range]");
+    const exp=strip.querySelector("[data-exp]");
+    const meta=strip.querySelector(".meta");
+    tr.els={arm,mute,solo,warp,vol,meta};
+    arm.onclick=()=>ctl("arm-"+i);
+    mute.onclick=()=>ctl("mute-"+i);
+    solo.onclick=()=>ctl("solo-"+i);
+    warp.onclick=()=>ctl("warp-"+i);
+    vol.oninput=()=>{tr.vol=parseFloat(vol.value); refreshGains();};
+    [arm,mute,solo,warp,vol].forEach(el=>el.addEventListener("pointerdown",e=>{
+      if(learnMode){e.preventDefault(); e.stopPropagation(); pickLearnTarget(el);}
+    },true));
+    exp.onclick=()=>exportTrack(i);
+    tracks.push(tr);
+  }
+}
+
+function ctl(id){ // azioni mappabili (UI + MIDI + voce)
+  if(id==="rec") return toggleRec();
+  if(id==="play") return startPlay();
+  if(id==="stop") return stopAll();
+  const m=id.match(/^(arm|mute|solo|warp)-(\d+)$/);
+  if(!m) return;
+  const tr=tracks[+m[2]]; if(!tr) return;
+  tr[m[1]==="arm"?"armed":m[1]]= !tr[m[1]==="arm"?"armed":m[1]];
+  tr.els[m[1]==="arm"?"arm":m[1]].classList.toggle("on", m[1]==="arm"?tr.armed:tr[m[1]]);
+  refreshGains();
+}
+
+function refreshGains(){
+  const anySolo=tracks.some(t=>t.solo);
+  tracks.forEach(t=>{
+    const audible=!t.mute && (!anySolo||t.solo);
+    t.gain.gain.setTargetAtTime(audible?t.vol:0, ctx.currentTime, .01);
+  });
+}
+
+/* ================= transport ================= */
+function toggleRec(){ recording?stopAll():startRec(); }
+
+function startRec(){
+  if(!ctx||!tracks.length) return setStatus("Prima apri i canali della scheda.");
+  if(!tracks.some(t=>t.armed)) return setStatus("Arma almeno una traccia (⏺) per registrare.");
+  stopAll();
+  tracks.forEach(t=>{ if(t.armed) t.chunks=[]; });
+  recording=true; $("btnRec").classList.add("on");
+  playBuffers();            // overdub: riproduce le tracce già registrate
+  startClock(); startClick();
+  setStatus("● REC — registro "+tracks.filter(t=>t.armed).length+" traccia/e a "+projBPM()+" BPM");
+}
+
+function startPlay(){
+  if(recording) return;
+  stopAll();
+  if(!tracks.some(t=>t.buffer)) return setStatus("Nessuna traccia registrata.");
+  playing=true; $("btnPlay").classList.add("on");
+  playBuffers(); startClock(); startClick();
+  setStatus("▶ Play");
+}
+
+function playBuffers(){
+  refreshGains();
+  tracks.forEach(tr=>{
+    if(tr.buffer && !(recording&&tr.armed)){
+      const s=ctx.createBufferSource();
+      s.buffer=tr.buffer;
+      s.playbackRate.value=(tr.warp&&tr.recBPM)?projBPM()/tr.recBPM:1;
+      s.connect(tr.gain); s.start();
+      tr.player=s;
+    }
+  });
+}
+
+function stopAll(){
+  if(recording){
+    recording=false; $("btnRec").classList.remove("on");
+    tracks.forEach(tr=>{
+      if(tr.armed && tr.chunks.length){
+        const len=tr.chunks.reduce((a,c)=>a+c.length,0);
+        const buf=ctx.createBuffer(1,len,ctx.sampleRate);
+        const d=buf.getChannelData(0); let o=0;
+        tr.chunks.forEach(c=>{d.set(c,o); o+=c.length;});
+        tr.buffer=buf; tr.recBPM=projBPM(); tr.chunks=[];
+        tr.els.meta.textContent=buf.duration.toFixed(1)+"s · reg. a "+tr.recBPM+" BPM";
+      }
+    });
+    setStatus("Registrazione salvata nelle tracce.");
+  }
+  playing=false; $("btnPlay").classList.remove("on");
+  tracks.forEach(tr=>{ if(tr.player){try{tr.player.stop();}catch(e){} tr.player=null;} });
+  stopClock(); stopClick();
+}
+
+function startClock(){
+  startTime=ctx.currentTime;
+  const tick=()=>{
+    const t=ctx.currentTime-startTime;
+    $("clock").textContent=String(Math.floor(t/60)).padStart(2,"0")+":"+String(Math.floor(t%60)).padStart(2,"0")+"."+Math.floor((t%1)*10);
+    rafId=requestAnimationFrame(tick);
+  };
+  tick();
+}
+function stopClock(){ cancelAnimationFrame(rafId); $("clock").textContent="00:00.0"; }
+
+/* ================= click / metronomo ================= */
+$("btnClick").onclick=()=>{clickOn=!clickOn; $("btnClick").classList.toggle("on",clickOn); if(!recording&&!playing) stopClick();};
+function startClick(){
+  if(!clickOn) return;
+  let next=ctx.currentTime+0.05, beat=0;
+  clickTimer=setInterval(()=>{
+    while(next<ctx.currentTime+0.15){
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.frequency.value=beat%4===0?1600:1100;
+      g.gain.setValueAtTime(.5,next); g.gain.exponentialRampToValueAtTime(.001,next+.05);
+      o.connect(g); g.connect(ctx.destination); o.start(next); o.stop(next+.06);
+      next+=60/projBPM(); beat++;
+    }
+  },50);
+}
+function stopClick(){ clearInterval(clickTimer); clickTimer=null; }
+
+/* ================= export WAV ================= */
+function resample(data, rate){ // warp offline (interpolazione lineare)
+  if(Math.abs(rate-1)<1e-4) return data;
+  const outLen=Math.floor(data.length/rate), out=new Float32Array(outLen);
+  for(let i=0;i<outLen;i++){
+    const p=i*rate, i0=Math.floor(p), f=p-i0;
+    out[i]=data[i0]*(1-f)+(data[i0+1]||0)*f;
+  }
+  return out;
+}
+function wavBlob(data, sr){
+  const n=data.length, buf=new ArrayBuffer(44+n*2), v=new DataView(buf);
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  ws(0,"RIFF"); v.setUint32(4,36+n*2,true); ws(8,"WAVE"); ws(12,"fmt ");
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  ws(36,"data"); v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){const s=Math.max(-1,Math.min(1,data[i])); v.setInt16(44+i*2, s<0?s*0x8000:s*0x7FFF, true);}
+  return new Blob([buf],{type:"audio/wav"});
+}
+function download(blob,name){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+function trackData(tr){ // audio della traccia con warp applicato
+  const raw=tr.buffer.getChannelData(0);
+  const rate=(tr.warp&&tr.recBPM)?projBPM()/tr.recBPM:1;
+  return resample(raw,rate);
+}
+function exportTrack(i){
+  const tr=tracks[i];
+  if(!tr||!tr.buffer) return setStatus("La traccia "+(i+1)+" è vuota.");
+  download(wavBlob(trackData(tr),ctx.sampleRate),"recrec_traccia"+(i+1)+".wav");
+  setStatus("Traccia "+(i+1)+" esportata (WAV 16-bit).");
+}
+$("btnMaster").onclick=()=>{
+  const anySolo=tracks.some(t=>t.solo);
+  const datas=tracks.filter(t=>t.buffer&&!t.mute&&(!anySolo||t.solo))
+                    .map(t=>({d:trackData(t),v:t.vol}));
+  if(!datas.length) return setStatus("Nessuna traccia udibile da esportare.");
+  const len=Math.max(...datas.map(x=>x.d.length));
+  const mix=new Float32Array(len);
+  datas.forEach(x=>{for(let i=0;i<x.d.length;i++) mix[i]+=x.d[i]*x.v;});
+  let peak=0; for(let i=0;i<len;i++) peak=Math.max(peak,Math.abs(mix[i]));
+  if(peak>1) for(let i=0;i<len;i++) mix[i]/=peak; // evita clip
+  download(wavBlob(mix,ctx.sampleRate),"recrec_master.wav");
+  setStatus("Master esportato (mix di "+datas.length+" tracce).");
+};
+
+/* ================= MIDI ================= */
+$("btnMidi").onclick=async()=>{
+  if(!navigator.requestMIDIAccess) return setStatus("Web MIDI non supportato da questo browser.");
+  try{
+    midiAccess=await navigator.requestMIDIAccess();
+    midiAccess.inputs.forEach(inp=>inp.onmidimessage=onMidi);
+    midiAccess.onstatechange=()=>midiAccess.inputs.forEach(inp=>inp.onmidimessage=onMidi);
+    $("btnMidi").classList.add("on"); $("btnLearn").disabled=false;
+    setStatus("MIDI attivo ("+midiAccess.inputs.size+" dispositivi). Usa MIDI Learn per mappare i controlli.");
+  }catch(e){ setStatus("Accesso MIDI negato: "+e.message); }
+};
+$("btnLearn").onclick=()=>{
+  learnMode=!learnMode; learnTarget=null;
+  document.querySelectorAll(".midi-target").forEach(e=>e.classList.remove("midi-target"));
+  $("btnLearn").classList.toggle("on",learnMode);
+  setStatus(learnMode?"MIDI Learn: tocca un controllo (REC/PLAY/STOP, ⏺, M, S, W o un volume)…":"MIDI Learn disattivato.");
+};
+// pulsanti transport intercettano il learn
+["btnRec","btnPlay","btnStop"].forEach(id=>{
+  $(id).addEventListener("pointerdown",e=>{
+    if(learnMode){e.preventDefault(); e.stopPropagation(); pickLearnTarget($(id));}
+  },true);
+  $(id).addEventListener("click",e=>{ if(learnMode){e.preventDefault(); e.stopPropagation();} },true);
+});
+$("btnRec").onclick=()=>{if(!learnMode)toggleRec();};
+$("btnPlay").onclick=()=>{if(!learnMode)startPlay();};
+$("btnStop").onclick=()=>{if(!learnMode)stopAll();};
+function pickLearnTarget(el){
+  document.querySelectorAll(".midi-target").forEach(e=>e.classList.remove("midi-target"));
+  learnTarget=el.dataset.midi; el.classList.add("midi-target");
+  $("btnLearn").classList.add("learn-armed");
+  setStatus('Muovi ora il controller MIDI da assegnare a "'+learnTarget+'"…');
+}
+function onMidi(e){
+  const [st,d1,d2]=e.data, type=st&0xF0;
+  if(type!==0x90 && type!==0x80 && type!==0xB0) return;
+  const key=(type===0x80?0x90:type)+"-"+(st&0x0F)+"-"+d1;
+  if(learnMode && learnTarget){
+    midiMap[key]=learnTarget;
+    setStatus('MIDI mappato → "'+learnTarget+'". Puoi mapparne un altro o disattivare Learn.');
+    document.querySelectorAll(".midi-target").forEach(x=>x.classList.remove("midi-target"));
+    $("btnLearn").classList.remove("learn-armed"); learnTarget=null;
+    return;
+  }
+  const act=midiMap[key]; if(!act) return;
+  if(act.startsWith("vol-")){
+    if(type!==0xB0) { if(type===0x90&&d2>0) {} else return; }
+    const i=+act.slice(4), tr=tracks[i]; if(!tr) return;
+    tr.vol=(type===0xB0?d2:127)/127; tr.els.vol.value=tr.vol; refreshGains();
+    return;
+  }
+  // trigger su note-on o CC>63
+  if((type===0x90&&d2>0)||(type===0xB0&&d2>63)) ctl(act);
+}
+
+/* ================= comandi vocali ================= */
+$("btnVoice").onclick=()=>{
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR) return setStatus("Riconoscimento vocale non supportato (prova Chrome).");
+  if(voiceOn){voiceOn=false; recog&&recog.stop(); $("btnVoice").classList.remove("on"); return setStatus("Comandi vocali disattivati.");}
+  recog=new SR(); recog.lang="it-IT"; recog.continuous=true; recog.interimResults=false;
+  recog.onresult=e=>{
+    const t=e.results[e.results.length-1][0].transcript.toLowerCase();
+    if(/\b(rec|registra)\b/.test(t)) toggleRec();
+    else if(/\b(stop|ferma|basta)\b/.test(t)) stopAll();
+    else if(/\b(play|plei|vai|parti)\b/.test(t)) startPlay();
+  };
+  recog.onend=()=>{ if(voiceOn) try{recog.start();}catch(e){} };
+  try{ recog.start(); voiceOn=true; $("btnVoice").classList.add("on");
+    setStatus('Comandi vocali attivi: di\' "registra", "play" o "stop". (Occhio: il mic di sistema ascolta i comandi.)');
+  }catch(e){ setStatus("Impossibile avviare la voce: "+e.message); }
+};
+</script>
+</body>
+</html>
