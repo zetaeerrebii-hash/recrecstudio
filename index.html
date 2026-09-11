@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,7 +24,7 @@
     color:var(--panel); display:flex; justify-content:center;
   }
   .amp{
-    width:100%; max-width:1100px;
+    width:100%; max-width:1200px;
     background:
       repeating-radial-gradient(circle at 0 0, transparent 0 6px, rgba(0,0,0,.04) 6px 7px),
       var(--tolex);
@@ -84,15 +84,20 @@
     font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:6px 10px;}
   .pill.on{background:var(--gold);color:var(--panel);box-shadow:0 0 12px rgba(201,164,92,.7);}
   .pill.learn-armed{border-color:var(--red-hi);color:var(--red-hi);}
+  .pill.burst-on{border-color:var(--red-hi);color:#fff;background:var(--red-hi);box-shadow:0 0 12px var(--red-hi);}
   .hint{margin:8px 8px 0;text-align:center;font-size:10px;color:#8f7c58;letter-spacing:.04em;}
   .amp > .hint{margin:0 16px 14px;color:var(--tolex-dark);}
+  .diag{font-size:10px;color:#a99565;text-align:center;line-height:1.5;margin-top:6px;}
+  .diag b{color:var(--gold-hi);}
+  .expwrap{display:flex;gap:4px;align-items:center;}
+  .expwrap select{max-width:130px;}
 
   /* ============ TIMELINE ============ */
   .tl{
     margin:0 12px 12px; display:flex; border:2px solid var(--gold); border-radius:8px;
     background:#0d0a07; overflow:hidden; min-height:120px;
   }
-  .tl-left{flex:0 0 148px; background:linear-gradient(#f4ecd6,#e0d4b2); border-right:2px solid var(--gold);}
+  .tl-left{flex:0 0 196px; background:linear-gradient(#f4ecd6,#e0d4b2); border-right:2px solid var(--gold);}
   .corner{height:30px;border-bottom:1px solid #9a8354;display:flex;align-items:center;justify-content:center;
     font-size:9px;letter-spacing:.14em;color:#6a5638;text-transform:uppercase;}
   .tctrl{
@@ -102,8 +107,8 @@
   .tctrl.active{background:linear-gradient(#fff6dd,#ecdfba); box-shadow:inset 3px 0 0 var(--red);}
   .tctrl .r1{display:flex;align-items:center;gap:4px;}
   .tctrl .chname{font-family:Georgia,serif;font-style:italic;font-weight:bold;color:var(--brown);
-    font-size:13px;flex:1;}
-  .sq{width:26px;height:24px;border-radius:4px;font-size:9px;font-weight:800;border:1px solid #9a8354;
+    font-size:12px;flex:1;}
+  .sq{width:23px;height:22px;border-radius:4px;font-size:8px;font-weight:800;border:1px solid #9a8354;
     background:linear-gradient(#fff,#d8cba9);color:var(--panel);box-shadow:0 2px 0 #8a7448;}
   .sq:active{transform:translateY(1px);}
   .sq.arm.on{background:radial-gradient(circle at 40% 30%, #ff8f80, var(--red));color:#fff;box-shadow:0 0 8px var(--red-hi);}
@@ -111,12 +116,18 @@
   .sq.solo.on{background:var(--gold);color:var(--panel);}
   .sq.warp.on{background:#7fb069;color:#fff;}
   .sq.midi-target,input[type=range].midi-target{outline:2px dashed var(--red-hi);outline-offset:2px;}
-  .tctrl input[type=range]{flex:1;min-width:0;height:7px;}
+  .tctrl input[type=range]{flex:1;min-width:0;height:6px;}
+  .tctrl select.inpick{font-size:9px;padding:1px 2px;max-width:56px;border:1px solid #9a8354;
+    border-radius:3px;background:#fff;color:var(--panel);}
   input[type=range]{-webkit-appearance:none;appearance:none;border-radius:4px;
     background:linear-gradient(#0e0b08,#26201a);border:1px solid var(--gold);outline:none;}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;
     border-radius:50%;background:radial-gradient(circle at 35% 30%, var(--gold-hi), var(--gold) 60%, #6b521f);
     border:1px solid #6b521f;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.5);}
+  .meter{width:7px;height:60px;background:#0e0b08;border:1px solid var(--gold);border-radius:3px;
+    position:relative;overflow:hidden;flex:0 0 auto;}
+  .meter-fill{position:absolute;left:0;right:0;bottom:0;height:0%;
+    background:linear-gradient(to top,#7fb069 0%,#e0b96a 65%,#ff6a55 100%);}
   .tl-scroll{flex:1;overflow-x:auto;overflow-y:hidden;}
   .tl-content{position:relative;}
   canvas.ruler{display:block;height:30px;background:#171208;cursor:pointer;touch-action:none;}
@@ -135,19 +146,20 @@
   <div class="cpanel">
     <!-- SETUP -->
     <div class="row">
-      <div><label class="plate">Ingresso</label>
-        <select id="deviceSel"><option value="">Sistema integrato (default)</option></select></div>
-      <div><label class="plate">Uscita</label>
-        <select id="outSel"><option value="">Predefinita di sistema</option></select></div>
-      <div><label class="plate">Tracce</label>
-        <select id="chSel" disabled><option>—</option></select></div>
-      <div><label class="plate">&nbsp;</label><button class="btn" id="btnDetect">Rileva</button></div>
-      <div><label class="plate">&nbsp;</label><button class="btn" id="btnOpen" disabled>Apri</button></div>
+      <div><label class="plate">Input</label>
+        <select id="deviceSel"><option value="">Built-in system (default)</option></select></div>
+      <div><label class="plate">Output</label>
+        <select id="outSel"><option value="">System default</option></select></div>
+      <div><label class="plate">Channels to open</label>
+        <select id="chSel" disabled><option>detect first</option></select></div>
+      <div><label class="plate">&nbsp;</label><button class="btn" id="btnDetect">Detect</button></div>
+      <div><label class="plate">&nbsp;</label><button class="btn" id="btnOpen" disabled>Open</button></div>
     </div>
+    <div class="diag" id="diag"></div>
 
     <!-- TRANSPORT -->
     <div class="row">
-      <button class="jewel" id="btnRw" title="Torna a zero">⏮</button>
+      <button class="jewel" id="btnRw" title="Back to zero">⏮</button>
       <button class="jewel" id="btnRec" data-midi="rec">REC</button>
       <button class="jewel" id="btnPlay" data-midi="play">PLAY</button>
       <button class="jewel" id="btnStop" data-midi="stop">STOP</button>
@@ -155,62 +167,113 @@
       <div><label class="plate">BPM</label><input type="number" id="bpm" value="120" min="30" max="300"></div>
       <button class="pill" id="btnClick">Click</button>
       <button class="pill" id="btnLoop" data-midi="loop">Loop</button>
+      <button class="pill on" id="btnMonitor" title="Hear armed tracks even without recording">Monitor</button>
     </div>
 
-    <!-- EDIT + EXTRA -->
+    <!-- TRACKS -->
     <div class="row">
-      <button class="pill" id="btnCopy">Copia</button>
-      <button class="pill" id="btnCut">Taglia</button>
-      <button class="pill" id="btnDel">Cancella</button>
-      <button class="pill" id="btnPaste">Incolla</button>
+      <button class="pill" id="btnAddTrack">+ Track</button>
+      <button class="pill" id="btnRemoveTrack">− Track</button>
+      <button class="pill" id="btnCopy">Copy</button>
+      <button class="pill" id="btnCut">Cut</button>
+      <button class="pill" id="btnDel">Delete</button>
+      <button class="pill" id="btnPaste">Paste</button>
       <button class="pill" id="btnUndo">Undo</button>
       <button class="pill" id="btnZoomOut">−</button>
       <button class="pill" id="btnZoomIn">+</button>
+    </div>
+
+    <!-- IO / EXTRA -->
+    <div class="row">
       <button class="pill" id="btnMidi">MIDI</button>
       <button class="pill" id="btnLearn" disabled>Learn</button>
-      <button class="pill" id="btnVoice">Voce</button>
+      <button class="pill" id="btnVoice">Voice</button>
+      <button class="pill" id="btnBurst" title="Emergency stop: 4 loud hits within 3s on ANY open channel">Burst Stop</button>
       <button class="pill" id="btnMaster" disabled>Export Master</button>
-      <button class="pill" id="btnExpTr" disabled>Export Traccia</button>
+      <button class="pill" id="btnExportStems" disabled>Export Stems</button>
+      <div class="expwrap">
+        <select id="expTrackSel" disabled><option value="">— track —</option></select>
+        <button class="pill" id="btnExpTr" disabled>Export Track</button>
+      </div>
     </div>
-    <div class="hint" id="status">Premi "Rileva": funziona anche solo col microfono integrato, senza scheda audio esterna.</div>
+    <div class="hint" id="status">Press "Detect", pick your audio interface: "Channels to open" fills in with what the driver actually reports for that device.</div>
   </div>
 
   <!-- TIMELINE -->
   <div class="tl" id="tl">
-    <div class="tl-left" id="tlLeft"><div class="empty-tl" style="width:148px">—</div></div>
+    <div class="tl-left" id="tlLeft"><div class="empty-tl" style="width:196px">—</div></div>
     <div class="tl-scroll" id="tlScroll">
-      <div class="empty-tl">Apri gli ingressi per vedere la timeline</div>
+      <div class="empty-tl">Open the input to see the timeline</div>
     </div>
   </div>
 
   <div class="hint">
-    Timeline: tocca = sposta la barra · trascina sul righello = regione di loop · trascina su una traccia = selezione (poi Copia/Taglia/Cancella/Incolla) ·
-    REC registra dal punto della barra (punch-in) e riproduce le altre tracce · W = warp al BPM di progetto ·
-    Voce: "registra / play / stop" · MIDI Learn: attiva, tocca un controllo, muovi il controller
+    The "IN n" menu on each track picks which physical input feeds it — CH1→Track1 in order by default, reassign it if your mixer's patch doesn't match.
+    The vertical LED is the live input level (works even without recording, with Monitor on) — use it to confirm every mixer channel is really reaching the browser.
+    Timeline: tap = move playhead · drag on ruler = loop region · drag on a track = selection (then Copy/Cut/Delete/Paste) ·
+    REC records from the playhead (punch-in) · W = warp to project BPM · Voice: say "rec" four times to start recording, "stop" four times to stop, "play" once to play.
   </div>
 </div>
 
 <script>
-/* ================= stato ================= */
-let ctx=null, stream=null, srcNode=null, proc=null;
-let tracks=[];   // {armed,mute,solo,vol,ga,warp,rate,recBPM,data,len,wpos,cv,els}
-let playing=false, recording=false;
-let playSample=0;                 // posizione progetto in campioni
-let loopOn=false, loopA=0, loopB=0;   // secondi
+/* ================= state ================= */
+let ctx=null, stream=null, srcNode=null, proc=null, delivered=0, bufSize=2048;
+let tracks=[], trackIdSeq=0;
+let playing=false, recording=false, monitorOn=true;
+let playSample=0;
+let loopOn=false, loopA=0, loopB=0;
 let pxPerSec=30, contentW=1800, laneH=76;
-let activeTrack=-1, sel=null;     // sel={i,a,b} in secondi
-let clip=null, undoStack=[];
+let activeId=null, sel=null;      // sel = {trId,a,b}
+let clip=null, undoStack=[];      // undo entries = {trId,data,len,recBPM}
 let midiAccess=null, midiMap={}, learnMode=false, learnTarget=null;
 let recog=null, voiceOn=false, clickOn=false, clickTimer=null;
 let rulerCv=null, playheadEl=null, contentEl=null, scrollEl=null;
 let lastWaveDraw=0;
+let inputPeaks=null;
+let burstOn=false, burstLoud=null, burstHist=null;
+let recHits=[], stopHits=[];
 
 const $=id=>document.getElementById(id);
 const setStatus=t=>$("status").textContent=t;
+const setDiag=h=>$("diag").innerHTML=h;
 const projBPM=()=>Math.max(30,Math.min(300,parseFloat($("bpm").value)||120));
 const SR=()=>ctx?ctx.sampleRate:44100;
 
-/* ================= rilevamento dispositivi ================= */
+/* ================= detection + real capabilities ================= */
+async function probeCapabilities(deviceId){
+  let s;
+  try{
+    s=await navigator.mediaDevices.getUserMedia({audio:{
+      deviceId:deviceId?{exact:deviceId}:undefined,
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false
+    }});
+  }catch(e){
+    setDiag('Could not query this input: '+e.message);
+    return {min:1,max:2};
+  }
+  const tr=s.getAudioTracks()[0];
+  let min=1,max=2;
+  if(tr.getCapabilities){
+    const c=tr.getCapabilities();
+    if(c.channelCount){min=c.channelCount.min||1;max=c.channelCount.max||2;}
+    else max=tr.getSettings().channelCount||2;
+  }else{
+    max=tr.getSettings().channelCount||2;
+  }
+  tr.stop(); s.getTracks().forEach(t=>t.stop());
+  return {min,max};
+}
+function populateChSel(min,max){
+  const sel=$("chSel"); sel.innerHTML=""; sel.disabled=false;
+  const opts=new Set();
+  for(let i=min;i<=max;i++){ if(i<=8||i%2===0||i===max) opts.add(i); }
+  [...opts].sort((a,b)=>a-b).forEach(n=>{
+    const o=document.createElement("option"); o.value=n; o.textContent=n+(n===1?" channel":" channels");
+    sel.appendChild(o);
+  });
+  sel.value=max;
+}
+
 $("btnDetect").onclick=async()=>{
   try{
     const tmp=await navigator.mediaDevices.getUserMedia({audio:true});
@@ -218,26 +281,34 @@ $("btnDetect").onclick=async()=>{
     const devs=await navigator.mediaDevices.enumerateDevices();
     const ins=devs.filter(d=>d.kind==="audioinput"), outs=devs.filter(d=>d.kind==="audiooutput");
     const dSel=$("deviceSel");
-    dSel.innerHTML='<option value="">Sistema integrato (default)</option>';
+    dSel.innerHTML='<option value="">Built-in system (default)</option>';
     ins.forEach((d,i)=>{const o=document.createElement("option");o.value=d.deviceId;
-      o.textContent=d.label||("Ingresso "+(i+1));dSel.appendChild(o);});
+      o.textContent=d.label||("Input "+(i+1));dSel.appendChild(o);});
     const oSel=$("outSel");
-    oSel.innerHTML='<option value="">Predefinita di sistema</option>';
+    oSel.innerHTML='<option value="">System default</option>';
     outs.forEach((d,i)=>{const o=document.createElement("option");o.value=d.deviceId;
-      o.textContent=d.label||("Uscita "+(i+1));oSel.appendChild(o);});
+      o.textContent=d.label||("Output "+(i+1));oSel.appendChild(o);});
     $("btnOpen").disabled=false;
-    setStatus(ins.length+" ingressi e "+outs.length+" uscite trovate. Scegli e premi Apri.");
-  }catch(e){ setStatus("Permesso negato o nessun ingresso: "+e.message); }
+    const cap=await probeCapabilities(dSel.value);
+    populateChSel(cap.min,cap.max);
+    setStatus(ins.length+" inputs found. This device reports "+cap.min+" to "+cap.max+" channels. Pick how many to open and press Open.");
+    dSel.onchange=async()=>{
+      const c=await probeCapabilities(dSel.value);
+      populateChSel(c.min,c.max);
+      setStatus("Device changed: reports "+c.min+" to "+c.max+" channels.");
+    };
+  }catch(e){ setStatus("Permission denied or no input found: "+e.message); }
 };
 
 $("outSel").onchange=async()=>{
   if(!ctx) return;
   if(typeof ctx.setSinkId!=="function")
-    return setStatus("Questo browser non permette di scegliere l'uscita (usa Chrome recente).");
-  try{ await ctx.setSinkId($("outSel").value||""); setStatus("Uscita audio cambiata."); }
-  catch(e){ setStatus("Impossibile cambiare uscita: "+e.message); }
+    return setStatus("This browser doesn't allow choosing the output (use a recent Chrome).");
+  try{ await ctx.setSinkId($("outSel").value||""); setStatus("Output device changed."); }
+  catch(e){ setStatus("Couldn't change output: "+e.message); }
 };
 
+/* ================= open with real negotiation ================= */
 $("btnOpen").onclick=async()=>{
   try{
     stopAll();
@@ -245,37 +316,59 @@ $("btnOpen").onclick=async()=>{
     if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:"interactive"});
     await ctx.resume();
     if($("outSel").value && typeof ctx.setSinkId==="function"){try{await ctx.setSinkId($("outSel").value);}catch(e){}}
+
     const devId=$("deviceSel").value;
-    stream=await navigator.mediaDevices.getUserMedia({audio:{
-      deviceId:devId?{exact:devId}:undefined,
-      channelCount:{ideal:32},
-      echoCancellation:false, noiseSuppression:false, autoGainControl:false
-    }});
-    const inCh=stream.getAudioTracks()[0].getSettings().channelCount||1;
-    const maxTr=Math.max(8,inCh);
-    const chSel=$("chSel"); chSel.innerHTML="";
-    for(let i=1;i<=maxTr;i++){
-      const o=document.createElement("option");o.value=i;
-      o.textContent=i+(i===1?" traccia":" tracce")+(i<=inCh?"":" *");
-      chSel.appendChild(o);
+    const requested=parseInt($("chSel").value)||2;
+    let n=requested, lastErr=null;
+    while(n>=1){
+      try{
+        stream=await navigator.mediaDevices.getUserMedia({audio:{
+          deviceId:devId?{exact:devId}:undefined,
+          channelCount:{exact:n},
+          echoCancellation:false, noiseSuppression:false, autoGainControl:false
+        }});
+        break;
+      }catch(e){ lastErr=e; stream=null; n--; }
     }
-    chSel.value=Math.min(4,maxTr); chSel.disabled=false;
-    chSel.onchange=()=>buildTracks(parseInt(chSel.value), inCh);
-    buildGraph(inCh);
-    buildTracks(parseInt(chSel.value), inCh);
-    $("btnMaster").disabled=false; $("btnExpTr").disabled=false;
-    setStatus("Aperto: "+inCh+" ingresso/i fisico/i a "+SR()+" Hz. CH1→ingresso 1, CH2→ingresso 2… (le tracce * riusano l'ultimo ingresso, utili per l'overdub).");
-  }catch(e){ setStatus("Errore apertura: "+e.message); }
+    if(!stream){
+      setStatus("Couldn't open any channel: "+(lastErr?lastErr.message:"unknown error"));
+      return;
+    }
+    const track=stream.getAudioTracks()[0];
+    const settings=track.getSettings();
+    delivered=settings.channelCount||n;
+
+    buildGraph(delivered);
+    if(srcNode && srcNode.channelCount && srcNode.channelCount<delivered) delivered=srcNode.channelCount;
+
+    createInitialTracks(delivered);
+    $("btnMaster").disabled=false; $("btnExportStems").disabled=false;
+    $("expTrackSel").disabled=false; $("btnExpTr").disabled=false;
+
+    if(delivered<requested){
+      setStatus("Requested "+requested+" channels, the system granted "+delivered+" at "+SR()+" Hz.");
+      setDiag('<b>Only '+delivered+' of '+requested+' channels open.</b> On a Yamaha 01V96i the most likely cause is the mixer\\'s own routing, not the browser: USB only carries what is patched there. On the mixer press <b>PATCH → Direct Out</b> and assign each Input Channel 1–16 to destination <b>USB1…USB16</b> (cursor on the channel, dial to the destination, [ENTER] to confirm each one) — by default USB often carries only the main stereo mix. Then check in Audio MIDI Setup (Mac) or Sound Control Panel (Windows) that the device really shows more channels, install/update the "Yamaha Steinberg USB Driver", and use Chrome or Edge (Firefox/Safari cap capture at 2 channels).');
+    }else{
+      setStatus("Open: "+delivered+" real channels at "+SR()+" Hz. CH1→Track 1, CH2→Track 2… in order.");
+      setDiag("");
+    }
+  }catch(e){ setStatus("Error opening device: "+e.message); }
 };
 
-/* ================= motore audio (nastro) ================= */
+/* ================= audio engine (tape) ================= */
 function buildGraph(inCh){
   if(proc){proc.disconnect(); proc.onaudioprocess=null;}
   if(srcNode) srcNode.disconnect();
+  bufSize = inCh<=4?2048: (inCh<=8?4096:8192);
   srcNode=ctx.createMediaStreamSource(stream);
-  proc=ctx.createScriptProcessor(2048, Math.max(1,Math.min(inCh, srcNode.channelCount||inCh)), 2);
+  srcNode.channelCount=inCh; srcNode.channelCountMode="explicit"; srcNode.channelInterpretation="discrete";
+  proc=ctx.createScriptProcessor(bufSize, inCh, 2);
+  proc.channelInterpretation="discrete";
   srcNode.connect(proc); proc.connect(ctx.destination);
   proc.onaudioprocess=onAudio;
+  inputPeaks=new Float32Array(inCh);
+  burstLoud=new Uint8Array(inCh);
+  burstHist=Array.from({length:inCh},()=>[]);
 }
 
 function ensureCap(tr,need){
@@ -291,75 +384,139 @@ function onAudio(e){
   const L=out.getChannelData(0), R=out.getChannelData(1);
   const n=out.length, sr=SR(), inCh=inB.numberOfChannels;
   L.fill(0); R.fill(0);
-  if(!playing&&!recording) return;
   const ins=[]; for(let c=0;c<inCh;c++) ins.push(inB.getChannelData(c));
+
+  for(let c=0;c<inCh && c<inputPeaks.length;c++){
+    let pk=0; const d=ins[c];
+    for(let s=0;s<n;s+=4){const v=d[s]<0?-d[s]:d[s]; if(v>pk)pk=v;}
+    inputPeaks[c]=pk;
+  }
+
   if(recording) tracks.forEach(tr=>{ if(tr.armed) ensureCap(tr, tr.wpos+n+2); });
+
   let pos=playSample;
   const la=(loopA*sr)|0, lb=(loopB*sr)|0;
   const doLoop=playing&&!recording&&loopOn&&lb>la+128;
+
   for(let s=0;s<n;s++){
     let mix=0;
-    for(let i=0;i<tracks.length;i++){
-      const tr=tracks[i];
-      if(recording&&tr.armed){
-        tr.data[tr.wpos]=ins[Math.min(i,inCh-1)][s];
-        tr.wpos++; if(tr.wpos>tr.len)tr.len=tr.wpos;
-      }else if(tr.len&&tr.ga>0){
+    for(let k=0;k<tracks.length;k++){
+      const tr=tracks[k], ic=tr.inputCh;
+      if(tr.armed && ic<inCh){
+        if(recording){ tr.data[tr.wpos]=ins[ic][s]; tr.wpos++; if(tr.wpos>tr.len)tr.len=tr.wpos; }
+        if(monitorOn) mix+=ins[ic][s]*tr.ga;
+      }else if(tr.len&&tr.ga>0&&(playing||recording)){
         const idx=pos*tr.rate, i0=idx|0;
         if(i0<tr.len-1){const f=idx-i0; mix+=(tr.data[i0]*(1-f)+tr.data[i0+1]*f)*tr.ga;}
       }
     }
     if(mix>1)mix=1;else if(mix<-1)mix=-1;
     L[s]=mix;R[s]=mix;
-    pos++;
-    if(doLoop&&pos>=lb)pos=la;
+    if(playing||recording){
+      pos++;
+      if(doLoop&&pos>=lb)pos=la;
+    }
   }
-  playSample=pos;
+  if(playing||recording) playSample=pos;
 }
 
-/* ================= tracce + timeline UI ================= */
-function buildTracks(n, inCh){
+/* ================= track objects ================= */
+function makeTrack(defaultInputCh){
+  return {id:trackIdSeq++, armed:false,mute:false,solo:false,vol:0.8,ga:0.8,warp:false,rate:1,recBPM:null,
+    inputCh:Math.min(defaultInputCh, Math.max(delivered-1,0)),
+    data:null,len:0,wpos:0,cv:null,els:{}};
+}
+function createInitialTracks(n){
   stopAll();
-  tracks=[]; activeTrack=-1; sel=null; undoStack=[];
+  tracks=[]; activeId=null; sel=null; undoStack=[];
+  for(let i=0;i<n;i++) tracks.push(makeTrack(i));
+  renderTracks(); populateExportSelect();
+}
+function addTrack(){
+  if(!delivered) return setStatus("Open the input first.");
+  const tr=makeTrack(tracks.length);
+  tracks.push(tr);
+  renderTracks(); populateExportSelect(); setActive(tr.id);
+  setStatus("Track "+tracks.length+" added.");
+}
+function removeTrack(){
+  if(tracks.length<=1) return setStatus("At least one track is required.");
+  let target=activeId!=null?tracks.find(t=>t.id===activeId):null;
+  if(!target) target=tracks[tracks.length-1];
+  const idx=tracks.indexOf(target);
+  if(target.len>0 && !confirm("Track "+(idx+1)+" contains recorded audio. Remove it anyway?")) return;
+  tracks.splice(idx,1);
+  if(activeId===target.id) activeId=null;
+  if(sel&&sel.trId===target.id) sel=null;
+  renderTracks(); populateExportSelect();
+  setStatus("Track removed.");
+}
+$("btnAddTrack").onclick=addTrack;
+$("btnRemoveTrack").onclick=removeTrack;
+
+/* ================= timeline UI ================= */
+function renderTracks(){
   const left=$("tlLeft"), scroll=$("tlScroll");
-  left.innerHTML='<div class="corner">rec rec</div>';
-  scroll.innerHTML='<div class="tl-content" id="tlContent">'+
-    '<canvas class="ruler" id="ruler"></canvas><div id="lanes"></div><div id="playhead"></div></div>';
-  contentEl=$("tlContent"); scrollEl=scroll; playheadEl=$("playhead"); rulerCv=$("ruler");
-  const lanes=$("lanes");
-  for(let i=0;i<n;i++){
-    const tr={armed:false,mute:false,solo:false,vol:0.8,ga:0.8,warp:false,rate:1,recBPM:null,
-              data:null,len:0,wpos:0,cv:null,els:{}};
-    const c=document.createElement("div"); c.className="tctrl"; c.dataset.i=i;
-    c.innerHTML='<div class="r1"><span class="chname">CH '+(i+1)+'</span>'+
-      '<button class="sq arm" data-midi="arm-'+i+'">⏺</button>'+
-      '<button class="sq mute" data-midi="mute-'+i+'">M</button>'+
-      '<button class="sq solo" data-midi="solo-'+i+'">S</button>'+
-      '<button class="sq warp" data-midi="warp-'+i+'">W</button></div>'+
-      '<div class="r1"><input type="range" min="0" max="1" step="0.01" value="0.8" data-midi="vol-'+i+'"></div>';
+  if(!contentEl || !scroll.contains(contentEl)){
+    left.innerHTML='<div class="corner">rec rec</div>';
+    scroll.innerHTML='<div class="tl-content" id="tlContent">'+
+      '<canvas class="ruler" id="ruler"></canvas><div id="lanes"></div><div id="playhead"></div></div>';
+    contentEl=$("tlContent"); scrollEl=scroll; playheadEl=$("playhead"); rulerCv=$("ruler");
+    bindRuler();
+  }else{
+    left.innerHTML='<div class="corner">rec rec</div>';
+  }
+  const lanes=$("lanes"); lanes.innerHTML="";
+  sel=null;
+  tracks.forEach((tr,i)=>{
+    const c=document.createElement("div"); c.className="tctrl"; c.dataset.id=tr.id;
+    let inOpts="";
+    for(let k=0;k<delivered;k++) inOpts+='<option value="'+k+'"'+(k===tr.inputCh?" selected":"")+'>IN '+(k+1)+'</option>';
+    c.innerHTML='<div class="r1"><span class="chname">T'+(i+1)+'</span>'+
+      '<button class="sq arm">⏺</button>'+
+      '<button class="sq mute">M</button>'+
+      '<button class="sq solo">S</button>'+
+      '<button class="sq warp">W</button></div>'+
+      '<div class="r1"><select class="inpick">'+inOpts+'</select>'+
+      '<div class="meter"><div class="meter-fill"></div></div>'+
+      '<input type="range" min="0" max="1" step="0.01" value="'+tr.vol+'"></div>';
     left.appendChild(c);
     const [arm,mute,solo,warp]=c.querySelectorAll(".sq");
-    const vol=c.querySelector("input");
-    tr.els={arm,mute,solo,warp,vol,ctrl:c};
-    arm.onclick=()=>ctl("arm-"+i); mute.onclick=()=>ctl("mute-"+i);
-    solo.onclick=()=>ctl("solo-"+i); warp.onclick=()=>ctl("warp-"+i);
+    const inpick=c.querySelector(".inpick");
+    const vol=c.querySelector("input[type=range]"); const meterFill=c.querySelector(".meter-fill");
+    arm.classList.toggle("on",tr.armed); mute.classList.toggle("on",tr.mute);
+    solo.classList.toggle("on",tr.solo); warp.classList.toggle("on",tr.warp);
+    arm.dataset.midi="arm-"+tr.id; mute.dataset.midi="mute-"+tr.id;
+    solo.dataset.midi="solo-"+tr.id; warp.dataset.midi="warp-"+tr.id; vol.dataset.midi="vol-"+tr.id;
+    tr.els={arm,mute,solo,warp,vol,inpick,ctrl:c,meterFill};
+    arm.onclick=()=>doAction(tr,"arm"); mute.onclick=()=>doAction(tr,"mute");
+    solo.onclick=()=>doAction(tr,"solo"); warp.onclick=()=>doAction(tr,"warp");
+    inpick.onchange=()=>{tr.inputCh=parseInt(inpick.value);};
     vol.oninput=()=>{tr.vol=parseFloat(vol.value);refreshGains();};
-    c.addEventListener("pointerdown",()=>setActive(i));
-    [arm,mute,solo,warp,vol].forEach(el=>el.addEventListener("pointerdown",e=>{
-      if(learnMode){e.preventDefault();e.stopPropagation();pickLearnTarget(el);}
+    c.addEventListener("pointerdown",()=>setActive(tr.id));
+    [arm,mute,solo,warp,vol].forEach(el=>el.addEventListener("pointerdown",ev=>{
+      if(learnMode){ev.preventDefault();ev.stopPropagation();pickLearnTarget(el);}
     },true));
     const lane=document.createElement("div"); lane.className="lane";
     const cv=document.createElement("canvas"); lane.appendChild(cv); lanes.appendChild(lane);
-    tr.cv=cv; bindLane(cv,i);
-    tracks.push(tr);
-  }
-  bindRuler();
+    tr.cv=cv; bindLane(cv,tr);
+    if(tr.id===activeId) c.classList.add("active");
+  });
   refreshGains(); layout(); drawAll();
 }
 
-function setActive(i){
-  activeTrack=i;
-  tracks.forEach((t,k)=>t.els.ctrl.classList.toggle("active",k===i));
+function setActive(id){
+  activeId=id;
+  tracks.forEach(t=>{ if(t.els&&t.els.ctrl) t.els.ctrl.classList.toggle("active", t.id===id); });
+}
+
+function doAction(tr,action){
+  if(!tr) return;
+  const key=action==="arm"?"armed":action;
+  tr[key]=!tr[key];
+  tr.els[action].classList.toggle("on",tr[key]);
+  if(action==="warp"){refreshRates();layout();drawAll();}
+  refreshGains();
 }
 
 function ctl(id){
@@ -368,12 +525,7 @@ function ctl(id){
   if(id==="stop")return stopAll();
   if(id==="loop"){loopOn=!loopOn;$("btnLoop").classList.toggle("on",loopOn);drawRuler();return;}
   const m=id.match(/^(arm|mute|solo|warp)-(\d+)$/); if(!m)return;
-  const tr=tracks[+m[2]]; if(!tr)return;
-  const k=m[1]==="arm"?"armed":m[1];
-  tr[k]=!tr[k];
-  tr.els[m[1]].classList.toggle("on",tr[k]);
-  if(m[1]==="warp"){refreshRates();layout();drawAll();}
-  refreshGains();
+  const tr=tracks.find(t=>t.id===+m[2]); doAction(tr,m[1]);
 }
 
 function refreshGains(){
@@ -384,8 +536,9 @@ function refreshRates(){
   tracks.forEach(t=>{t.rate=(t.warp&&t.recBPM)?projBPM()/t.recBPM:1;});
 }
 $("bpm").onchange=()=>{refreshRates();layout();drawAll();};
+$("btnMonitor").onclick=()=>{monitorOn=!monitorOn;$("btnMonitor").classList.toggle("on",monitorOn);};
 
-/* ================= layout & disegno ================= */
+/* ================= layout & drawing ================= */
 function projLenSec(){
   let m=0; tracks.forEach(t=>{if(t.len)m=Math.max(m,t.len/t.rate/SR());});
   return m;
@@ -398,7 +551,7 @@ function layout(){
   rulerCv.width=contentW; rulerCv.height=30;
   tracks.forEach(t=>{t.cv.width=contentW;t.cv.height=laneH;});
 }
-function drawAll(){drawRuler();tracks.forEach((t,i)=>drawTrack(i));}
+function drawAll(){drawRuler();tracks.forEach(tr=>drawTrack(tr));}
 
 function drawRuler(){
   const g=rulerCv.getContext("2d"), w=rulerCv.width, h=30;
@@ -419,8 +572,8 @@ function drawRuler(){
 function fmt(sec){const m=Math.floor(sec/60),s=Math.floor(sec%60);
   return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");}
 
-function drawTrack(i){
-  const tr=tracks[i], cv=tr.cv, g=cv.getContext("2d"), w=cv.width, h=laneH;
+function drawTrack(tr){
+  const cv=tr.cv, g=cv.getContext("2d"), w=cv.width, h=laneH;
   g.fillStyle="#141009"; g.fillRect(0,0,w,h);
   g.strokeStyle="#241c10"; g.beginPath();g.moveTo(0,h/2+.5);g.lineTo(w,h/2+.5);g.stroke();
   if(tr.len){
@@ -437,7 +590,7 @@ function drawTrack(i){
       g.fillRect(x,y1,1,Math.max(1,y2-y1));
     }
   }
-  if(sel&&sel.i===i&&Math.abs(sel.b-sel.a)>0.005){
+  if(sel&&sel.trId===tr.id&&Math.abs(sel.b-sel.a)>0.005){
     g.fillStyle="rgba(255,106,85,.28)";
     g.fillRect(Math.min(sel.a,sel.b)*pxPerSec,0,Math.abs(sel.b-sel.a)*pxPerSec,h);
     g.strokeStyle="#ff6a55";
@@ -445,7 +598,7 @@ function drawTrack(i){
   }
 }
 
-/* ================= interazioni timeline ================= */
+/* ================= timeline interactions ================= */
 function evX(e,el){const r=el.getBoundingClientRect();return Math.max(0,e.clientX-r.left);}
 function bindRuler(){
   let down=false,x0=0,moved=false;
@@ -466,11 +619,11 @@ function bindRuler(){
     down=false;
   });
 }
-function bindLane(cv,i){
+function bindLane(cv,tr){
   let down=false,t0=0,moved=false;
   cv.addEventListener("pointerdown",e=>{
     if(learnMode)return;
-    setActive(i);
+    setActive(tr.id);
     down=true;moved=false;t0=evX(e,cv)/pxPerSec;cv.setPointerCapture(e.pointerId);
   });
   cv.addEventListener("pointermove",e=>{
@@ -478,59 +631,60 @@ function bindLane(cv,i){
     const t=evX(e,cv)/pxPerSec;
     if(Math.abs(t-t0)*pxPerSec>4)moved=true;
     if(moved){
-      if(sel&&sel.i!==i){const old=sel.i;sel=null;drawTrack(old);}
-      sel={i,a:t0,b:t};drawTrack(i);
+      if(sel&&sel.trId!==tr.id){const old=tracks.find(x=>x.id===sel.trId);sel=null;if(old)drawTrack(old);}
+      sel={trId:tr.id,a:t0,b:t};drawTrack(tr);
     }
   });
   cv.addEventListener("pointerup",()=>{
     if(down&&!moved){
       playSample=Math.round(t0*SR());
-      if(sel){const old=sel.i;sel=null;drawTrack(old);}
+      if(sel){sel=null;drawTrack(tr);}
     }
     down=false;
   });
 }
 
 /* ================= editing ================= */
-function pushUndo(i){
-  const tr=tracks[i];
-  undoStack.push({i,data:tr.data?tr.data.slice(0,tr.len):null,len:tr.len,recBPM:tr.recBPM});
+function pushUndo(tr){
+  undoStack.push({trId:tr.id,data:tr.data?tr.data.slice(0,tr.len):null,len:tr.len,recBPM:tr.recBPM});
   if(undoStack.length>12)undoStack.shift();
 }
 $("btnUndo").onclick=()=>{
   const u=undoStack.pop();
-  if(!u)return setStatus("Niente da annullare.");
-  const tr=tracks[u.i];
+  if(!u)return setStatus("Nothing to undo.");
+  const tr=tracks.find(t=>t.id===u.trId);
+  if(!tr)return setStatus("That track no longer exists.");
   tr.data=u.data?u.data:null;tr.len=u.len;tr.recBPM=u.recBPM;
-  refreshRates();layout();drawAll();setStatus("Annullato (CH "+(u.i+1)+").");
+  refreshRates();layout();drawAll();setStatus("Undone.");
 };
+function getActiveTrack(){ return activeId!=null?tracks.find(t=>t.id===activeId):null; }
 function selSamples(){
   if(!sel||Math.abs(sel.b-sel.a)<0.005)return null;
-  const tr=tracks[sel.i];
+  const tr=tracks.find(t=>t.id===sel.trId); if(!tr)return null;
   const a=Math.max(0,Math.round(Math.min(sel.a,sel.b)*SR()*tr.rate));
   const b=Math.min(tr.len,Math.round(Math.max(sel.a,sel.b)*SR()*tr.rate));
-  return b>a?{i:sel.i,a,b}:null;
+  return b>a?{tr,a,b}:null;
 }
 $("btnCopy").onclick=()=>{
-  const s=selSamples(); if(!s)return setStatus("Seleziona prima una parte di traccia (trascina sulla forma d'onda).");
-  clip=tracks[s.i].data.slice(s.a,s.b);
-  setStatus("Copiati "+((s.b-s.a)/SR()).toFixed(2)+"s da CH "+(s.i+1)+".");
+  const s=selSamples(); if(!s)return setStatus("Select part of a track first (drag on its waveform).");
+  clip=s.tr.data.slice(s.a,s.b);
+  setStatus("Copied "+((s.b-s.a)/SR()).toFixed(2)+"s.");
 };
 $("btnDel").onclick=()=>{
-  const s=selSamples(); if(!s)return setStatus("Seleziona prima una parte di traccia.");
-  pushUndo(s.i); tracks[s.i].data.fill(0,s.a,s.b);
-  drawTrack(s.i); setStatus("Cancellato (silenzio) su CH "+(s.i+1)+".");
+  const s=selSamples(); if(!s)return setStatus("Select part of a track first.");
+  pushUndo(s.tr); s.tr.data.fill(0,s.a,s.b);
+  drawTrack(s.tr); setStatus("Deleted (silenced) the selection.");
 };
 $("btnCut").onclick=()=>{
-  const s=selSamples(); if(!s)return setStatus("Seleziona prima una parte di traccia.");
-  clip=tracks[s.i].data.slice(s.a,s.b);
-  pushUndo(s.i); tracks[s.i].data.fill(0,s.a,s.b);
-  drawTrack(s.i); setStatus("Tagliato "+((s.b-s.a)/SR()).toFixed(2)+"s da CH "+(s.i+1)+".");
+  const s=selSamples(); if(!s)return setStatus("Select part of a track first.");
+  clip=s.tr.data.slice(s.a,s.b);
+  pushUndo(s.tr); s.tr.data.fill(0,s.a,s.b);
+  drawTrack(s.tr); setStatus("Cut "+((s.b-s.a)/SR()).toFixed(2)+"s.");
 };
 $("btnPaste").onclick=()=>{
-  if(!clip)return setStatus("Appunti vuoti: prima Copia o Taglia.");
-  if(activeTrack<0)return setStatus("Tocca prima una traccia di destinazione.");
-  const tr=tracks[activeTrack]; pushUndo(activeTrack);
+  if(!clip)return setStatus("Clipboard is empty: Copy or Cut first.");
+  const tr=getActiveTrack(); if(!tr)return setStatus("Tap a destination track first.");
+  pushUndo(tr);
   if(!tr.recBPM)tr.recBPM=projBPM();
   refreshRates();
   const at=Math.round(playSample*tr.rate);
@@ -538,19 +692,19 @@ $("btnPaste").onclick=()=>{
   tr.data.set(clip,at);
   tr.len=Math.max(tr.len,at+clip.length);
   layout();drawAll();
-  setStatus("Incollati "+(clip.length/SR()).toFixed(2)+"s su CH "+(activeTrack+1)+" al punto della barra.");
+  setStatus("Pasted "+(clip.length/SR()).toFixed(2)+"s at the playhead.");
 };
 
 /* ================= transport ================= */
 function toggleRec(){recording?stopAll():startRec();}
 function startRec(){
-  if(!ctx||!tracks.length)return setStatus("Prima premi Rileva e Apri.");
-  if(!tracks.some(t=>t.armed))return setStatus("Arma almeno una traccia (⏺).");
+  if(!ctx||!tracks.length)return setStatus("Press Detect and Open first.");
+  if(!tracks.some(t=>t.armed))return setStatus("Arm at least one track (⏺).");
   stopTransportOnly();
   refreshRates();
   tracks.forEach(tr=>{
     if(tr.armed){
-      if(tr.len)pushUndo(tracks.indexOf(tr));
+      if(tr.len)pushUndo(tr);
       if(!tr.recBPM){tr.recBPM=projBPM();tr.rate=1;}
       tr.wpos=Math.round(playSample*tr.rate);
       ensureCap(tr,tr.wpos+SR()*10);
@@ -559,7 +713,7 @@ function startRec(){
   recording=true;playing=true;
   $("btnRec").classList.add("on");$("btnPlay").classList.add("on");
   startClick();
-  setStatus("● REC dal punto "+fmt(playSample/SR())+" — "+tracks.filter(t=>t.armed).length+" traccia/e, "+projBPM()+" BPM");
+  setStatus("● REC from "+fmt(playSample/SR())+" — "+tracks.filter(t=>t.armed).length+" track(s), "+projBPM()+" BPM");
 }
 function startPlay(){
   if(recording)return;
@@ -577,8 +731,8 @@ function stopAll(){
   const wasRec=recording;
   stopTransportOnly();
   if(wasRec&&tracks.length){
-    refreshRates();layout();drawAll();
-    setStatus("Registrazione salvata. Durata progetto: "+fmt(projLenSec()));
+    refreshRates();layout();drawAll();populateExportSelect();
+    setStatus("Recording saved. Project length: "+fmt(projLenSec()));
   }
 }
 $("btnRw").onclick=()=>{playSample=0;};
@@ -587,18 +741,19 @@ $("btnPlay").onclick=()=>{if(!learnMode)startPlay();};
 $("btnStop").onclick=()=>{if(!learnMode)stopAll();};
 $("btnLoop").onclick=()=>{if(!learnMode)ctl("loop");};
 
-/* zoom */
 $("btnZoomIn").onclick=()=>{pxPerSec=Math.min(120,pxPerSec*1.5);layout();drawAll();};
 $("btnZoomOut").onclick=()=>{pxPerSec=Math.max(4,pxPerSec/1.5);layout();drawAll();};
 
-/* animazione playhead */
+/* ================= animation: playhead, meters, burst detector ================= */
 function raf(){
-  if(playheadEl&&ctx){
-    const x=playSample/SR()*pxPerSec;
-    playheadEl.style.transform="translateX("+x+"px)";
+  if(ctx){
     const t=playSample/SR();
     $("clock").textContent=String(Math.floor(t/60)).padStart(2,"0")+":"+
       String(Math.floor(t%60)).padStart(2,"0")+"."+Math.floor((t%1)*10);
+  }
+  if(playheadEl&&ctx&&contentEl){
+    const x=playSample/SR()*pxPerSec;
+    playheadEl.style.transform="translateX("+x+"px)";
     if(playing||recording){
       const vis=scrollEl.clientWidth;
       if(x<scrollEl.scrollLeft||x>scrollEl.scrollLeft+vis-40)
@@ -607,7 +762,26 @@ function raf(){
     }
     if(recording&&performance.now()-lastWaveDraw>280){
       lastWaveDraw=performance.now();
-      tracks.forEach((t,i)=>{if(t.armed)drawTrack(i);});
+      tracks.forEach(t=>{if(t.armed)drawTrack(t);});
+    }
+  }
+  if(inputPeaks){
+    tracks.forEach(tr=>{
+      if(!tr.els||!tr.els.meterFill)return;
+      const lvl=tr.inputCh<inputPeaks.length?inputPeaks[tr.inputCh]:0;
+      tr.els.meterFill.style.height=Math.min(100,lvl*130)+"%";
+    });
+    if(burstOn&&burstLoud){
+      const now=Date.now();
+      for(let c=0;c<inputPeaks.length;c++){
+        const lvl=inputPeaks[c];
+        if(lvl>0.35 && !burstLoud[c]){
+          burstLoud[c]=1;
+          const h=burstHist[c]; h.push(now);
+          while(h.length&&now-h[0]>3000) h.shift();
+          if(h.length>=4){ h.length=0; setStatus("Burst Stop triggered on IN "+(c+1)+"."); stopAll(); }
+        }else if(lvl<0.12){ burstLoud[c]=0; }
+      }
     }
   }
   requestAnimationFrame(raf);
@@ -633,7 +807,7 @@ function startClick(){
 function stopClick(){clearInterval(clickTimer);clickTimer=null;}
 
 /* ================= export ================= */
-function readTrackAt(tr,pos){ // pos in campioni progetto
+function readTrackAt(tr,pos){
   const idx=pos*tr.rate,i0=idx|0;
   if(!tr.len||i0>=tr.len-1)return 0;
   const f=idx-i0;return tr.data[i0]*(1-f)+tr.data[i0+1]*f;
@@ -651,19 +825,44 @@ function wavBlob(data,sr){
 }
 function download(b,name){const a=document.createElement("a");a.href=URL.createObjectURL(b);
   a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}
-$("btnExpTr").onclick=()=>{
-  const i=activeTrack;
-  if(i<0||!tracks[i]||!tracks[i].len)return setStatus("Tocca prima una traccia registrata da esportare.");
+
+function populateExportSelect(){
+  const sel=$("expTrackSel"); const cur=sel.value;
+  sel.innerHTML="";
+  tracks.forEach((tr,i)=>{
+    const o=document.createElement("option"); o.value=tr.id;
+    o.textContent="Track "+(i+1)+(tr.len?"":" (empty)"); sel.appendChild(o);
+  });
+  if(tracks.some(t=>String(t.id)===cur)) sel.value=cur;
+}
+function exportOneTrack(tr, filename){
   refreshRates();
-  const tr=tracks[i],n=Math.ceil(tr.len/tr.rate),outD=new Float32Array(n);
-  for(let p=0;p<n;p++)outD[p]=readTrackAt(tr,p);
-  download(wavBlob(outD,SR()),"recrec_traccia"+(i+1)+".wav");
-  setStatus("Traccia "+(i+1)+" esportata (WAV).");
+  const n=Math.ceil(tr.len/tr.rate), outD=new Float32Array(n);
+  for(let p=0;p<n;p++) outD[p]=readTrackAt(tr,p);
+  download(wavBlob(outD,SR()), filename);
+}
+$("btnExpTr").onclick=()=>{
+  const id=parseInt($("expTrackSel").value);
+  const tr=tracks.find(t=>t.id===id);
+  if(!tr)return setStatus("Pick a track to export.");
+  if(!tr.len)return setStatus("That track is empty.");
+  const idx=tracks.indexOf(tr);
+  exportOneTrack(tr,"recrec_track"+(idx+1)+".wav");
+  setStatus("Track "+(idx+1)+" exported (WAV).");
+};
+$("btnExportStems").onclick=()=>{
+  const nonEmpty=tracks.filter(t=>t.len>0);
+  if(!nonEmpty.length)return setStatus("No recorded tracks to export.");
+  nonEmpty.forEach((tr,k)=>{
+    const idx=tracks.indexOf(tr);
+    setTimeout(()=>exportOneTrack(tr,"recrec_stem_"+(idx+1)+".wav"), k*350);
+  });
+  setStatus("Exporting "+nonEmpty.length+" stem(s)…");
 };
 $("btnMaster").onclick=()=>{
   refreshRates();refreshGains();
   const n=Math.ceil(projLenSec()*SR());
-  if(!n)return setStatus("Nessuna traccia registrata.");
+  if(!n)return setStatus("No recorded tracks.");
   const mix=new Float32Array(n);
   tracks.forEach(tr=>{
     if(tr.len&&tr.ga>0)for(let p=0;p<n;p++)mix[p]+=readTrackAt(tr,p)*tr.ga;
@@ -671,26 +870,26 @@ $("btnMaster").onclick=()=>{
   let peak=0;for(let p=0;p<n;p++)peak=Math.max(peak,Math.abs(mix[p]));
   if(peak>1)for(let p=0;p<n;p++)mix[p]/=peak;
   download(wavBlob(mix,SR()),"recrec_master.wav");
-  setStatus("Master esportato ("+fmt(n/SR())+").");
+  setStatus("Master exported ("+fmt(n/SR())+").");
 };
 
 /* ================= MIDI ================= */
 $("btnMidi").onclick=async()=>{
-  if(!navigator.requestMIDIAccess)return setStatus("Web MIDI non supportato (usa Chrome).");
+  if(!navigator.requestMIDIAccess)return setStatus("Web MIDI not supported (use Chrome).");
   try{
     midiAccess=await navigator.requestMIDIAccess();
     const hook=()=>midiAccess.inputs.forEach(inp=>inp.onmidimessage=onMidi);
     hook();midiAccess.onstatechange=hook;
     $("btnMidi").classList.add("on");$("btnLearn").disabled=false;
-    setStatus("MIDI attivo ("+midiAccess.inputs.size+" dispositivi). Premi Learn per mappare.");
-  }catch(e){setStatus("Accesso MIDI negato: "+e.message);}
+    setStatus("MIDI active ("+midiAccess.inputs.size+" device(s)). Press Learn to map controls.");
+  }catch(e){setStatus("MIDI access denied: "+e.message);}
 };
 $("btnLearn").onclick=()=>{
   learnMode=!learnMode;learnTarget=null;
   document.querySelectorAll(".midi-target").forEach(x=>x.classList.remove("midi-target"));
   $("btnLearn").classList.toggle("on",learnMode);
   $("btnLearn").classList.remove("learn-armed");
-  setStatus(learnMode?"MIDI Learn: tocca REC/PLAY/STOP/Loop, ⏺ M S W o un volume…":"MIDI Learn disattivato.");
+  setStatus(learnMode?"MIDI Learn: touch REC/PLAY/STOP/Loop, ⏺ M S W or a fader…":"MIDI Learn off.");
 };
 ["btnRec","btnPlay","btnStop","btnLoop"].forEach(id=>{
   $(id).addEventListener("pointerdown",e=>{
@@ -701,7 +900,7 @@ function pickLearnTarget(el){
   document.querySelectorAll(".midi-target").forEach(x=>x.classList.remove("midi-target"));
   learnTarget=el.dataset.midi;el.classList.add("midi-target");
   $("btnLearn").classList.add("learn-armed");
-  setStatus('Muovi ora il controller MIDI da assegnare a "'+learnTarget+'"…');
+  setStatus('Now move the MIDI control to map to "'+learnTarget+'"…');
 }
 function onMidi(e){
   const [st,d1,d2]=e.data,type=st&0xF0;
@@ -709,36 +908,53 @@ function onMidi(e){
   const key=(type===0x80?0x90:type)+"-"+(st&0x0F)+"-"+d1;
   if(learnMode&&learnTarget){
     midiMap[key]=learnTarget;
-    setStatus('MIDI mappato → "'+learnTarget+'". Mappane un altro o spegni Learn.');
+    setStatus('Mapped MIDI → "'+learnTarget+'". Map another or turn off Learn.');
     document.querySelectorAll(".midi-target").forEach(x=>x.classList.remove("midi-target"));
     $("btnLearn").classList.remove("learn-armed");learnTarget=null;return;
   }
   const act=midiMap[key];if(!act)return;
   if(act.startsWith("vol-")){
-    const i=+act.slice(4),tr=tracks[i];if(!tr)return;
+    const id=+act.slice(4),tr=tracks.find(t=>t.id===id);if(!tr)return;
     if(type===0xB0){tr.vol=d2/127;tr.els.vol.value=tr.vol;refreshGains();}
     return;
   }
   if((type===0x90&&d2>0)||(type===0xB0&&d2>63))ctl(act);
 }
 
-/* ================= voce ================= */
+/* ================= voice commands (repeat-word trigger) ================= */
+function noteHit(arr, threshold, action, now){
+  arr.push(now);
+  while(arr.length && now-arr[0]>4000) arr.shift();
+  if(arr.length>=threshold){ arr.length=0; action(); }
+}
 $("btnVoice").onclick=()=>{
   const SRr=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SRr)return setStatus("Riconoscimento vocale non supportato (prova Chrome).");
+  if(!SRr)return setStatus("Speech recognition not supported (try Chrome).");
   if(voiceOn){voiceOn=false;recog&&recog.stop();$("btnVoice").classList.remove("on");
-    return setStatus("Comandi vocali disattivati.");}
-  recog=new SRr();recog.lang="it-IT";recog.continuous=true;recog.interimResults=false;
+    return setStatus("Voice commands off.");}
+  recog=new SRr();recog.lang="en-US";recog.continuous=true;recog.interimResults=false;
   recog.onresult=e=>{
-    const t=e.results[e.results.length-1][0].transcript.toLowerCase();
-    if(/\b(rec|registra)\b/.test(t))toggleRec();
-    else if(/\b(stop|ferma|basta)\b/.test(t))stopAll();
-    else if(/\b(play|plei|vai|parti)\b/.test(t))startPlay();
+    const res=e.results[e.results.length-1];
+    if(!res.isFinal)return;
+    const text=res[0].transcript.toLowerCase();
+    const now=Date.now();
+    const recCount=(text.match(/\brec\b/g)||[]).length;
+    const stopCount=(text.match(/\bstop\b/g)||[]).length;
+    for(let k=0;k<recCount;k++) noteHit(recHits,4,toggleRec,now);
+    for(let k=0;k<stopCount;k++) noteHit(stopHits,4,stopAll,now);
+    if(/\b(play|go)\b/.test(text)) startPlay();
   };
   recog.onend=()=>{if(voiceOn)try{recog.start();}catch(e){}};
   try{recog.start();voiceOn=true;$("btnVoice").classList.add("on");
-    setStatus('Voce attiva: di\' "registra", "play" o "stop" (meglio in cuffia).');
-  }catch(e){setStatus("Impossibile avviare la voce: "+e.message);}
+    setStatus('Voice on: say "rec" four times to record, "stop" four times to stop, "play" once to play (default mic only).');
+  }catch(e){setStatus("Couldn't start voice recognition: "+e.message);}
+};
+
+/* Burst Stop: energy-based, works on ANY open channel — not word recognition */
+$("btnBurst").onclick=()=>{
+  burstOn=!burstOn;
+  $("btnBurst").classList.toggle("burst-on",burstOn);
+  setStatus(burstOn?"Burst Stop armed: 4 loud hits within 3s on any channel will stop.":"Burst Stop off.");
 };
 </script>
 </body>
