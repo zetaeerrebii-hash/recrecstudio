@@ -189,14 +189,19 @@
       <button class="pill" id="btnLearn" disabled>Learn</button>
       <button class="pill" id="btnVoice">Voice</button>
       <button class="pill" id="btnBurst" title="Emergency stop: 4 loud hits within 3s on ANY open channel">Burst Stop</button>
-      <button class="pill" id="btnMaster" disabled>Export Master</button>
-      <button class="pill" id="btnExportStems" disabled>Export Stems</button>
+      <button class="pill" id="btnMaster">Export Master</button>
+      <button class="pill" id="btnExportStems">Export Stems</button>
       <div class="expwrap">
-        <select id="expTrackSel" disabled><option value="">— track —</option></select>
-        <button class="pill" id="btnExpTr" disabled>Export Track</button>
+        <select id="expTrackSel"><option value="">— track —</option></select>
+        <button class="pill" id="btnExpTr">Export Track</button>
+      </div>
+      <div class="expwrap">
+        <select id="impTrackSel"><option value="new">New track</option></select>
+        <button class="pill" id="btnImport">Import Audio</button>
+        <input type="file" id="fileImport" accept="audio/*,.mp3,.wav" multiple style="display:none">
       </div>
     </div>
-    <div class="hint" id="status">Press "Detect", pick your audio interface: "Channels to open" fills in with what the driver actually reports for that device.</div>
+    <div class="hint" id="status">Add tracks and import audio anytime — the built-in microphone connects automatically the first time you arm a track, enable Monitor, or hit Play. Press "Detect" only if you want to pick a specific multi-channel interface.</div>
   </div>
 
   <!-- TIMELINE -->
@@ -208,6 +213,8 @@
   </div>
 
   <div class="hint">
+    "+ Track" and "Import Audio" always work, with or without an interface open — a plain built-in microphone connects automatically the moment live input is needed.
+    Import Audio accepts mp3/wav (and anything your browser can decode); pick "New track" to drop each file on its own track, or target an existing one.
     The "IN n" menu on each track picks which physical input feeds it — CH1→Track1 in order by default, reassign it if your mixer's patch doesn't match.
     The vertical LED is the live input level (works even without recording, with Monitor on) — use it to confirm every mixer channel is really reaching the browser.
     Timeline: tap = move playhead · drag on ruler = loop region · drag on a track = selection (then Copy/Cut/Delete/Paste) ·
@@ -341,9 +348,12 @@ $("btnOpen").onclick=async()=>{
     buildGraph(delivered);
     if(srcNode && srcNode.channelCount && srcNode.channelCount<delivered) delivered=srcNode.channelCount;
 
-    createInitialTracks(delivered);
-    $("btnMaster").disabled=false; $("btnExportStems").disabled=false;
-    $("expTrackSel").disabled=false; $("btnExpTr").disabled=false;
+    if(tracks.length===0){
+      createInitialTracks(delivered);
+    }else{
+      tracks.forEach((tr,i)=>{ if(tr.inputCh>=delivered) tr.inputCh=Math.min(i,Math.max(delivered-1,0)); });
+      renderTracks(); populateExportSelect(); populateImportSelect();
+    }
 
     if(delivered<requested){
       setStatus("Requested "+requested+" channels, the system granted "+delivered+" at "+SR()+" Hz.");
@@ -369,6 +379,49 @@ function buildGraph(inCh){
   inputPeaks=new Float32Array(inCh);
   burstLoud=new Uint8Array(inCh);
   burstHist=Array.from({length:inCh},()=>[]);
+}
+
+/* Fallback: opens the plain built-in microphone automatically, no Detect/Open needed */
+async function ensureLiveInput(){
+  if(stream) return true;
+  try{
+    if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:"interactive"});
+    await ctx.resume();
+    stream=await navigator.mediaDevices.getUserMedia({audio:{
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false
+    }});
+    const track=stream.getAudioTracks()[0];
+    const settings=track.getSettings();
+    delivered=settings.channelCount||1;
+    buildGraph(delivered);
+    if(srcNode && srcNode.channelCount && srcNode.channelCount<delivered) delivered=srcNode.channelCount;
+    if(tracks.length===0){
+      createInitialTracks(delivered);
+    }else{
+      tracks.forEach((tr,i)=>{ if(tr.inputCh>=delivered) tr.inputCh=Math.min(i,Math.max(delivered-1,0)); });
+      renderTracks(); populateExportSelect(); populateImportSelect();
+    }
+    setStatus("Built-in microphone connected automatically: "+delivered+" channel(s) at "+SR()+" Hz.");
+    return true;
+  }catch(e){
+    setStatus("Couldn't access the microphone: "+e.message);
+    return false;
+  }
+}
+
+/* Lets Play/Import work even with zero live input: a 0-channel processor still drives playback */
+async function ensurePlaybackGraph(){
+  if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:"interactive"});
+  await ctx.resume();
+  if(!proc){
+    bufSize=2048;
+    proc=ctx.createScriptProcessor(bufSize,0,2);
+    proc.channelInterpretation="discrete";
+    proc.connect(ctx.destination);
+    proc.onaudioprocess=onAudio;
+    inputPeaks=new Float32Array(0);
+    burstLoud=new Uint8Array(0); burstHist=[];
+  }
 }
 
 function ensureCap(tr,need){
@@ -433,10 +486,9 @@ function createInitialTracks(n){
   renderTracks(); populateExportSelect();
 }
 function addTrack(){
-  if(!delivered) return setStatus("Open the input first.");
   const tr=makeTrack(tracks.length);
   tracks.push(tr);
-  renderTracks(); populateExportSelect(); setActive(tr.id);
+  renderTracks(); populateExportSelect(); populateImportSelect(); setActive(tr.id);
   setStatus("Track "+tracks.length+" added.");
 }
 function removeTrack(){
@@ -448,7 +500,7 @@ function removeTrack(){
   tracks.splice(idx,1);
   if(activeId===target.id) activeId=null;
   if(sel&&sel.trId===target.id) sel=null;
-  renderTracks(); populateExportSelect();
+  renderTracks(); populateExportSelect(); populateImportSelect();
   setStatus("Track removed.");
 }
 $("btnAddTrack").onclick=addTrack;
@@ -471,13 +523,17 @@ function renderTracks(){
   tracks.forEach((tr,i)=>{
     const c=document.createElement("div"); c.className="tctrl"; c.dataset.id=tr.id;
     let inOpts="";
-    for(let k=0;k<delivered;k++) inOpts+='<option value="'+k+'"'+(k===tr.inputCh?" selected":"")+'>IN '+(k+1)+'</option>';
+    if(delivered>0){
+      for(let k=0;k<delivered;k++) inOpts+='<option value="'+k+'"'+(k===tr.inputCh?" selected":"")+'>IN '+(k+1)+'</option>';
+    }else{
+      inOpts='<option value="0">—</option>';
+    }
     c.innerHTML='<div class="r1"><span class="chname">T'+(i+1)+'</span>'+
       '<button class="sq arm">⏺</button>'+
       '<button class="sq mute">M</button>'+
       '<button class="sq solo">S</button>'+
       '<button class="sq warp">W</button></div>'+
-      '<div class="r1"><select class="inpick">'+inOpts+'</select>'+
+      '<div class="r1"><select class="inpick"'+(delivered===0?" disabled":"")+'>'+inOpts+'</select>'+
       '<div class="meter"><div class="meter-fill"></div></div>'+
       '<input type="range" min="0" max="1" step="0.01" value="'+tr.vol+'"></div>';
     left.appendChild(c);
@@ -516,6 +572,7 @@ function doAction(tr,action){
   tr[key]=!tr[key];
   tr.els[action].classList.toggle("on",tr[key]);
   if(action==="warp"){refreshRates();layout();drawAll();}
+  if(action==="arm" && tr.armed && !stream) ensureLiveInput();
   refreshGains();
 }
 
@@ -536,7 +593,8 @@ function refreshRates(){
   tracks.forEach(t=>{t.rate=(t.warp&&t.recBPM)?projBPM()/t.recBPM:1;});
 }
 $("bpm").onchange=()=>{refreshRates();layout();drawAll();};
-$("btnMonitor").onclick=()=>{monitorOn=!monitorOn;$("btnMonitor").classList.toggle("on",monitorOn);};
+$("btnMonitor").onclick=()=>{monitorOn=!monitorOn;$("btnMonitor").classList.toggle("on",monitorOn);
+  if(monitorOn && !stream) ensureLiveInput();};
 
 /* ================= layout & drawing ================= */
 function projLenSec(){
@@ -697,9 +755,10 @@ $("btnPaste").onclick=()=>{
 
 /* ================= transport ================= */
 function toggleRec(){recording?stopAll():startRec();}
-function startRec(){
-  if(!ctx||!tracks.length)return setStatus("Press Detect and Open first.");
+async function startRec(){
+  if(!tracks.length)return setStatus("Add a track first (+ Track).");
   if(!tracks.some(t=>t.armed))return setStatus("Arm at least one track (⏺).");
+  if(!stream){ const ok=await ensureLiveInput(); if(!ok) return; }
   stopTransportOnly();
   refreshRates();
   tracks.forEach(tr=>{
@@ -715,8 +774,9 @@ function startRec(){
   startClick();
   setStatus("● REC from "+fmt(playSample/SR())+" — "+tracks.filter(t=>t.armed).length+" track(s), "+projBPM()+" BPM");
 }
-function startPlay(){
+async function startPlay(){
   if(recording)return;
+  if(!proc) await ensurePlaybackGraph();
   stopTransportOnly();
   refreshRates();refreshGains();
   playing=true;$("btnPlay").classList.add("on");
@@ -731,7 +791,7 @@ function stopAll(){
   const wasRec=recording;
   stopTransportOnly();
   if(wasRec&&tracks.length){
-    refreshRates();layout();drawAll();populateExportSelect();
+    refreshRates();layout();drawAll();populateExportSelect();populateImportSelect();
     setStatus("Recording saved. Project length: "+fmt(projLenSec()));
   }
 }
@@ -835,6 +895,59 @@ function populateExportSelect(){
   });
   if(tracks.some(t=>String(t.id)===cur)) sel.value=cur;
 }
+
+/* ================= import audio (mp3/wav/etc) ================= */
+function populateImportSelect(){
+  const sel=$("impTrackSel"); const cur=sel.value;
+  sel.innerHTML='<option value="new">New track</option>';
+  tracks.forEach((tr,i)=>{
+    const o=document.createElement("option"); o.value=tr.id;
+    o.textContent="Track "+(i+1)+(tr.len?"":" (empty)"); sel.appendChild(o);
+  });
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+function downmixToMono(buf){
+  const ch=buf.numberOfChannels;
+  if(ch===1) return buf.getChannelData(0).slice();
+  const n=buf.length, out=new Float32Array(n);
+  for(let c=0;c<ch;c++){ const d=buf.getChannelData(c); for(let i=0;i<n;i++) out[i]+=d[i]/ch; }
+  return out;
+}
+function resampleLinear(data, fromRate, toRate){
+  if(fromRate===toRate) return data;
+  const ratio=fromRate/toRate, outLen=Math.floor(data.length/ratio), out=new Float32Array(outLen);
+  for(let i=0;i<outLen;i++){ const p=i*ratio, i0=Math.floor(p), f=p-i0; out[i]=data[i0]*(1-f)+(data[i0+1]||0)*f; }
+  return out;
+}
+$("btnImport").onclick=()=>{ $("fileImport").click(); };
+$("fileImport").onchange=async(e)=>{
+  const files=[...e.target.files]; if(!files.length) return;
+  await ensurePlaybackGraph();
+  const targetVal=$("impTrackSel").value;
+  for(const file of files){
+    try{
+      const arrBuf=await file.arrayBuffer();
+      const audioBuf=await ctx.decodeAudioData(arrBuf);
+      const mono=downmixToMono(audioBuf);
+      const resampled=resampleLinear(mono, audioBuf.sampleRate, SR());
+      let tr;
+      if(targetVal==="new" || files.length>1){
+        tr=makeTrack(tracks.length); tracks.push(tr);
+      }else{
+        tr=tracks.find(t=>t.id===parseInt(targetVal));
+        if(!tr){ tr=makeTrack(tracks.length); tracks.push(tr); }
+        else if(tr.len>0 && !confirm('Track already has audio. Overwrite it with "'+file.name+'"?')) continue;
+      }
+      tr.data=resampled; tr.len=resampled.length; tr.wpos=tr.len;
+      const bpmGuess=prompt('Optional: source BPM of "'+file.name+'" (for Warp). Leave blank to skip.','');
+      if(bpmGuess && !isNaN(parseFloat(bpmGuess))) tr.recBPM=parseFloat(bpmGuess);
+      setStatus('Imported "'+file.name+'" ('+(tr.len/SR()).toFixed(1)+'s).');
+    }catch(err){ setStatus('Could not import "'+file.name+'": '+err.message); }
+  }
+  renderTracks(); populateExportSelect(); populateImportSelect();
+  layout(); drawAll();
+  e.target.value="";
+};
 function exportOneTrack(tr, filename){
   refreshRates();
   const n=Math.ceil(tr.len/tr.rate), outD=new Float32Array(n);
