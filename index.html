@@ -357,7 +357,7 @@ $("btnOpen").onclick=async()=>{
 
     if(delivered<requested){
       setStatus("Requested "+requested+" channels, the system granted "+delivered+" at "+SR()+" Hz.");
-      setDiag('<b>Only '+delivered+' of '+requested+' channels open.</b> On a Yamaha 01V96i the most likely cause is the mixer\\'s own routing, not the browser: USB only carries what is patched there. On the mixer press <b>PATCH → Direct Out</b> and assign each Input Channel 1–16 to destination <b>USB1…USB16</b> (cursor on the channel, dial to the destination, [ENTER] to confirm each one) — by default USB often carries only the main stereo mix. Then check in Audio MIDI Setup (Mac) or Sound Control Panel (Windows) that the device really shows more channels, install/update the "Yamaha Steinberg USB Driver", and use Chrome or Edge (Firefox/Safari cap capture at 2 channels).');
+      setDiag('<b>Only '+delivered+' of '+requested+' channels open.</b> On a Yamaha 01V96i the most likely cause is the mixer\'s own routing, not the browser: USB only carries what is patched there. On the mixer press <b>PATCH → Direct Out</b> and assign each Input Channel 1–16 to destination <b>USB1…USB16</b> (cursor on the channel, dial to the destination, [ENTER] to confirm each one) — by default USB often carries only the main stereo mix. Then check in Audio MIDI Setup (Mac) or Sound Control Panel (Windows) that the device really shows more channels, install/update the "Yamaha Steinberg USB Driver", and use Chrome or Edge (Firefox/Safari cap capture at 2 channels).');
     }else{
       setStatus("Open: "+delivered+" real channels at "+SR()+" Hz. CH1→Track 1, CH2→Track 2… in order.");
       setDiag("");
