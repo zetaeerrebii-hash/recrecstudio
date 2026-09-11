@@ -89,6 +89,13 @@
   .amp > .hint{margin:0 16px 14px;color:var(--tolex-dark);}
   .diag{font-size:10px;color:#a99565;text-align:center;line-height:1.5;margin-top:6px;}
   .diag b{color:var(--gold-hi);}
+  .devicelist{margin:8px 4px 0;max-height:170px;overflow-y:auto;border:1px solid var(--gold);
+    border-radius:6px;padding:4px 6px;}
+  .devicerow{display:flex;align-items:center;gap:7px;padding:4px 3px;font-size:11px;color:var(--cream-text);}
+  .devicerow input[type=checkbox]{width:15px;height:15px;accent-color:var(--gold);flex:0 0 auto;}
+  .devicerow .devlabel{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .devicerow select{font-size:10px;padding:2px 4px;max-width:80px;flex:0 0 auto;}
+  .devicerow .devorder{width:16px;text-align:center;font-weight:800;color:var(--red-hi);flex:0 0 auto;}
   .expwrap{display:flex;gap:4px;align-items:center;}
   .expwrap select{max-width:130px;}
 
@@ -146,15 +153,14 @@
   <div class="cpanel">
     <!-- SETUP -->
     <div class="row">
-      <div><label class="plate">Input</label>
-        <select id="deviceSel"><option value="">Built-in system (default)</option></select></div>
       <div><label class="plate">Output</label>
         <select id="outSel"><option value="">System default</option></select></div>
-      <div><label class="plate">Channels to open</label>
-        <select id="chSel" disabled><option>detect first</option></select></div>
       <div><label class="plate">&nbsp;</label><button class="btn" id="btnDetect">Detect</button></div>
       <div><label class="plate">&nbsp;</label><button class="btn" id="btnOpen" disabled>Open</button></div>
+      <div><label class="plate">&nbsp;</label><button class="btn" id="btnClearSel">Reset order</button></div>
     </div>
+    <div class="devicelist" id="deviceList"></div>
+    <div class="hint" id="orderPreview"></div>
     <div class="diag" id="diag"></div>
 
     <!-- TRANSPORT -->
@@ -201,7 +207,7 @@
         <input type="file" id="fileImport" accept="audio/*,.mp3,.wav" multiple style="display:none">
       </div>
     </div>
-    <div class="hint" id="status">Add tracks and import audio anytime — the built-in microphone connects automatically the first time you arm a track, enable Monitor, or hit Play. Press "Detect" only if you want to pick a specific multi-channel interface.</div>
+    <div class="hint" id="status">Add tracks and import audio anytime. Press "Detect" to list your input devices, tick the ones to combine in the order you want them assigned, then press "Open". A single multi-channel interface needs one tick; separate stereo pairs (common on MOTU, RME, and similar setups) can be combined by ticking several.</div>
   </div>
 
   <!-- TIMELINE -->
@@ -224,7 +230,8 @@
 
 <script>
 /* ================= state ================= */
-let ctx=null, stream=null, srcNode=null, proc=null, delivered=0, bufSize=2048;
+let ctx=null, openStreams=[], srcNodes=[], merger=null, proc=null, delivered=0, bufSize=2048;
+let pickedOrder=[], deviceCaps={};
 let tracks=[], trackIdSeq=0;
 let playing=false, recording=false, monitorOn=true;
 let playSample=0;
@@ -271,39 +278,87 @@ async function probeCapabilities(deviceId){
   return {min,max};
 }
 function populateChSel(min,max){
-  const sel=$("chSel"); sel.innerHTML=""; sel.disabled=false;
   const opts=new Set();
   for(let i=min;i<=max;i++){ if(i<=8||i%2===0||i===max) opts.add(i); }
-  [...opts].sort((a,b)=>a-b).forEach(n=>{
-    const o=document.createElement("option"); o.value=n; o.textContent=n+(n===1?" channel":" channels");
-    sel.appendChild(o);
-  });
-  sel.value=max;
+  return [...opts].sort((a,b)=>a-b);
 }
+
+function renderDeviceChecklist(ins){
+  const box=$("deviceList"); box.innerHTML="";
+  ins.forEach(d=>{
+    const cap=deviceCaps[d.deviceId]||{min:1,max:2,label:"Input"};
+    const row=document.createElement("div"); row.className="devicerow";
+    let chOpts="";
+    populateChSel(cap.min,cap.max).forEach(n=>{
+      chOpts+='<option value="'+n+'"'+(n===cap.max?" selected":"")+'>'+n+' ch</option>';
+    });
+    row.innerHTML='<span class="devorder"></span>'+
+      '<input type="checkbox" data-id="'+d.deviceId+'">'+
+      '<span class="devlabel">'+cap.label+'</span>'+
+      '<select data-id="'+d.deviceId+'" class="devch">'+chOpts+'</select>';
+    box.appendChild(row);
+    const cb=row.querySelector("input[type=checkbox]");
+    const chSel=row.querySelector("select");
+    cb.onchange=()=>{
+      if(cb.checked){ if(!pickedOrder.includes(d.deviceId)) pickedOrder.push(d.deviceId); }
+      else{ pickedOrder=pickedOrder.filter(id=>id!==d.deviceId); }
+      updateOrderBadges(); updateOrderPreview();
+    };
+    chSel.onchange=updateOrderPreview;
+  });
+  updateOrderBadges(); updateOrderPreview();
+}
+function updateOrderBadges(){
+  document.querySelectorAll("#deviceList .devicerow").forEach(row=>{
+    const cb=row.querySelector("input[type=checkbox]");
+    const badge=row.querySelector(".devorder");
+    const idx=pickedOrder.indexOf(cb.dataset.id);
+    badge.textContent=idx>=0?String(idx+1):"";
+  });
+}
+function updateOrderPreview(){
+  const el=$("orderPreview");
+  if(!pickedOrder.length){ el.textContent=""; return; }
+  let chStart=1; const parts=[];
+  pickedOrder.forEach(id=>{
+    const sel=document.querySelector('#deviceList select[data-id="'+id+'"]');
+    const n=sel?(parseInt(sel.value)||1):1;
+    const label=(deviceCaps[id]||{}).label||"Input";
+    parts.push("CH"+chStart+(n>1?("-"+(chStart+n-1)):"")+" from "+label);
+    chStart+=n;
+  });
+  el.textContent="Planned map: "+parts.join(" · ");
+}
+$("btnClearSel").onclick=()=>{
+  pickedOrder=[];
+  document.querySelectorAll("#deviceList input[type=checkbox]").forEach(cb=>cb.checked=false);
+  updateOrderBadges(); updateOrderPreview();
+  setStatus("Selection cleared, tick devices again in the order you want.");
+};
 
 $("btnDetect").onclick=async()=>{
   try{
     const tmp=await navigator.mediaDevices.getUserMedia({audio:true});
     tmp.getTracks().forEach(t=>t.stop());
     const devs=await navigator.mediaDevices.enumerateDevices();
-    const ins=devs.filter(d=>d.kind==="audioinput"), outs=devs.filter(d=>d.kind==="audiooutput");
-    const dSel=$("deviceSel");
-    dSel.innerHTML='<option value="">Built-in system (default)</option>';
-    ins.forEach((d,i)=>{const o=document.createElement("option");o.value=d.deviceId;
-      o.textContent=d.label||("Input "+(i+1));dSel.appendChild(o);});
+    const ins=devs.filter(d=>d.kind==="audioinput");
+    const outs=devs.filter(d=>d.kind==="audiooutput");
     const oSel=$("outSel");
     oSel.innerHTML='<option value="">System default</option>';
     outs.forEach((d,i)=>{const o=document.createElement("option");o.value=d.deviceId;
       o.textContent=d.label||("Output "+(i+1));oSel.appendChild(o);});
+
+    setStatus("Probing "+ins.length+" input device(s) for their real channel count...");
+    deviceCaps={};
+    for(let i=0;i<ins.length;i++){
+      const d=ins[i];
+      const cap=await probeCapabilities(d.deviceId);
+      deviceCaps[d.deviceId]={min:cap.min,max:cap.max,label:d.label||("Input "+(i+1))};
+    }
+    pickedOrder=[];
+    renderDeviceChecklist(ins);
     $("btnOpen").disabled=false;
-    const cap=await probeCapabilities(dSel.value);
-    populateChSel(cap.min,cap.max);
-    setStatus(ins.length+" inputs found. This device reports "+cap.min+" to "+cap.max+" channels. Pick how many to open and press Open.");
-    dSel.onchange=async()=>{
-      const c=await probeCapabilities(dSel.value);
-      populateChSel(c.min,c.max);
-      setStatus("Device changed: reports "+c.min+" to "+c.max+" channels.");
-    };
+    setStatus(ins.length+' input device(s) found. Tick the ones to combine, in order, then press "Open".');
   }catch(e){ setStatus("Permission denied or no input found: "+e.message); }
 };
 
@@ -315,38 +370,41 @@ $("outSel").onchange=async()=>{
   catch(e){ setStatus("Couldn't change output: "+e.message); }
 };
 
-/* ================= open with real negotiation ================= */
+/* ================= open with real multi-device negotiation ================= */
 $("btnOpen").onclick=async()=>{
   try{
-    stopAll();
-    if(stream) stream.getTracks().forEach(t=>t.stop());
+    if(!pickedOrder.length) return setStatus("Tick at least one input device first.");
     if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:"interactive"});
     await ctx.resume();
     if($("outSel").value && typeof ctx.setSinkId==="function"){try{await ctx.setSinkId($("outSel").value);}catch(e){}}
 
-    const devId=$("deviceSel").value;
-    const requested=parseInt($("chSel").value)||2;
-    let n=requested, lastErr=null;
-    while(n>=1){
-      try{
-        stream=await navigator.mediaDevices.getUserMedia({audio:{
-          deviceId:devId?{exact:devId}:undefined,
-          channelCount:{exact:n},
-          echoCancellation:false, noiseSuppression:false, autoGainControl:false
-        }});
-        break;
-      }catch(e){ lastErr=e; stream=null; n--; }
+    const collected=[], problems=[];
+    for(const devId of pickedOrder){
+      const rowSel=document.querySelector('#deviceList select[data-id="'+devId+'"]');
+      const requested=rowSel?(parseInt(rowSel.value)||2):2;
+      const label=(deviceCaps[devId]||{}).label||"Input";
+      let n=requested, gotStream=null, lastErr=null;
+      while(n>=1){
+        try{
+          gotStream=await navigator.mediaDevices.getUserMedia({audio:{
+            deviceId:{exact:devId},
+            channelCount:{exact:n},
+            echoCancellation:false, noiseSuppression:false, autoGainControl:false
+          }});
+          break;
+        }catch(e){ lastErr=e; gotStream=null; n--; }
+      }
+      if(!gotStream){
+        problems.push(label+": could not open ("+(lastErr?lastErr.message:"unknown error")+")");
+        continue;
+      }
+      const chGot=gotStream.getAudioTracks()[0].getSettings().channelCount||n;
+      collected.push({stream:gotStream, channels:chGot, label:label});
+      if(chGot<requested) problems.push(label+": requested "+requested+", got "+chGot);
     }
-    if(!stream){
-      setStatus("Couldn't open any channel: "+(lastErr?lastErr.message:"unknown error"));
-      return;
-    }
-    const track=stream.getAudioTracks()[0];
-    const settings=track.getSettings();
-    delivered=settings.channelCount||n;
+    if(!collected.length){ setStatus("Could not open any of the ticked devices."); return; }
 
-    buildGraph(delivered);
-    if(srcNode && srcNode.channelCount && srcNode.channelCount<delivered) delivered=srcNode.channelCount;
+    buildMultiGraph(collected);
 
     if(tracks.length===0){
       createInitialTracks(delivered);
@@ -355,46 +413,59 @@ $("btnOpen").onclick=async()=>{
       renderTracks(); populateExportSelect(); populateImportSelect();
     }
 
-    if(delivered<requested){
-      setStatus("Requested "+requested+" channels, the system granted "+delivered+" at "+SR()+" Hz.");
-      setDiag('<b>Only '+delivered+' of '+requested+' channels open.</b> On a Yamaha 01V96i the most likely cause is the mixer\'s own routing, not the browser: USB only carries what is patched there. On the mixer press <b>PATCH → Direct Out</b> and assign each Input Channel 1–16 to destination <b>USB1…USB16</b> (cursor on the channel, dial to the destination, [ENTER] to confirm each one) — by default USB often carries only the main stereo mix. Then check in Audio MIDI Setup (Mac) or Sound Control Panel (Windows) that the device really shows more channels, install/update the "Yamaha Steinberg USB Driver", and use Chrome or Edge (Firefox/Safari cap capture at 2 channels).');
-    }else{
-      setStatus("Open: "+delivered+" real channels at "+SR()+" Hz. CH1→Track 1, CH2→Track 2… in order.");
-      setDiag("");
-    }
-  }catch(e){ setStatus("Error opening device: "+e.message); }
+    let chStart=1; const mapParts=[];
+    collected.forEach(c=>{ mapParts.push("CH"+chStart+(c.channels>1?("-"+(chStart+c.channels-1)):"")+" from "+c.label); chStart+=c.channels; });
+    setStatus("Open: "+delivered+" real channel(s) total at "+SR()+" Hz, from "+collected.length+" device(s).");
+    setDiag(problems.length ? ("<b>Note:</b> "+problems.join(" · ")) : ("Map: "+mapParts.join(" · ")));
+  }catch(e){ setStatus("Error opening devices: "+e.message); }
 };
 
-/* ================= audio engine (tape) ================= */
-function buildGraph(inCh){
-  if(proc){proc.disconnect(); proc.onaudioprocess=null;}
-  if(srcNode) srcNode.disconnect();
-  bufSize = inCh<=4?2048: (inCh<=8?4096:8192);
-  srcNode=ctx.createMediaStreamSource(stream);
-  srcNode.channelCount=inCh; srcNode.channelCountMode="explicit"; srcNode.channelInterpretation="discrete";
-  proc=ctx.createScriptProcessor(bufSize, inCh, 2);
+/* ================= audio engine: merges every opened device into one channel space ================= */
+function teardownGraph(){
+  if(proc){ proc.disconnect(); proc.onaudioprocess=null; proc=null; }
+  if(merger){ try{merger.disconnect();}catch(e){} merger=null; }
+  srcNodes.forEach(o=>{ try{o.splitter.disconnect();}catch(e){} try{o.source.disconnect();}catch(e){} });
+  srcNodes=[];
+  openStreams.forEach(s=>s.getTracks().forEach(t=>t.stop()));
+  openStreams=[];
+}
+function buildMultiGraph(list){
+  teardownGraph();
+  const total=list.reduce((a,s)=>a+s.channels,0);
+  bufSize = total<=4?2048:(total<=8?4096:8192);
+  merger=ctx.createChannelMerger(total);
+  let offset=0;
+  list.forEach(item=>{
+    openStreams.push(item.stream);
+    const src=ctx.createMediaStreamSource(item.stream);
+    src.channelCount=item.channels; src.channelCountMode="explicit"; src.channelInterpretation="discrete";
+    const splitter=ctx.createChannelSplitter(item.channels);
+    src.connect(splitter);
+    for(let c=0;c<item.channels;c++){ splitter.connect(merger,c,offset+c); }
+    srcNodes.push({source:src,splitter:splitter});
+    offset+=item.channels;
+  });
+  proc=ctx.createScriptProcessor(bufSize, total, 2);
   proc.channelInterpretation="discrete";
-  srcNode.connect(proc); proc.connect(ctx.destination);
+  merger.connect(proc); proc.connect(ctx.destination);
   proc.onaudioprocess=onAudio;
-  inputPeaks=new Float32Array(inCh);
-  burstLoud=new Uint8Array(inCh);
-  burstHist=Array.from({length:inCh},()=>[]);
+  inputPeaks=new Float32Array(total);
+  burstLoud=new Uint8Array(total);
+  burstHist=Array.from({length:total},()=>[]);
+  delivered=total;
 }
 
 /* Fallback: opens the plain built-in microphone automatically, no Detect/Open needed */
 async function ensureLiveInput(){
-  if(stream) return true;
+  if(openStreams.length) return true;
   try{
     if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:"interactive"});
     await ctx.resume();
-    stream=await navigator.mediaDevices.getUserMedia({audio:{
+    const s=await navigator.mediaDevices.getUserMedia({audio:{
       echoCancellation:false, noiseSuppression:false, autoGainControl:false
     }});
-    const track=stream.getAudioTracks()[0];
-    const settings=track.getSettings();
-    delivered=settings.channelCount||1;
-    buildGraph(delivered);
-    if(srcNode && srcNode.channelCount && srcNode.channelCount<delivered) delivered=srcNode.channelCount;
+    const ch=s.getAudioTracks()[0].getSettings().channelCount||1;
+    buildMultiGraph([{stream:s, channels:ch, label:"Built-in microphone"}]);
     if(tracks.length===0){
       createInitialTracks(delivered);
     }else{
@@ -404,7 +475,7 @@ async function ensureLiveInput(){
     setStatus("Built-in microphone connected automatically: "+delivered+" channel(s) at "+SR()+" Hz.");
     return true;
   }catch(e){
-    setStatus("Couldn't access the microphone: "+e.message);
+    setStatus("Could not access the microphone: "+e.message);
     return false;
   }
 }
@@ -572,7 +643,7 @@ function doAction(tr,action){
   tr[key]=!tr[key];
   tr.els[action].classList.toggle("on",tr[key]);
   if(action==="warp"){refreshRates();layout();drawAll();}
-  if(action==="arm" && tr.armed && !stream) ensureLiveInput();
+  if(action==="arm" && tr.armed && !openStreams.length) ensureLiveInput();
   refreshGains();
 }
 
@@ -594,7 +665,7 @@ function refreshRates(){
 }
 $("bpm").onchange=()=>{refreshRates();layout();drawAll();};
 $("btnMonitor").onclick=()=>{monitorOn=!monitorOn;$("btnMonitor").classList.toggle("on",monitorOn);
-  if(monitorOn && !stream) ensureLiveInput();};
+  if(monitorOn && !openStreams.length) ensureLiveInput();};
 
 /* ================= layout & drawing ================= */
 function projLenSec(){
@@ -758,7 +829,7 @@ function toggleRec(){recording?stopAll():startRec();}
 async function startRec(){
   if(!tracks.length)return setStatus("Add a track first (+ Track).");
   if(!tracks.some(t=>t.armed))return setStatus("Arm at least one track (⏺).");
-  if(!stream){ const ok=await ensureLiveInput(); if(!ok) return; }
+  if(!openStreams.length){ const ok=await ensureLiveInput(); if(!ok) return; }
   stopTransportOnly();
   refreshRates();
   tracks.forEach(tr=>{
